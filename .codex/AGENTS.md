@@ -67,7 +67,7 @@ unsupported, obsolete, or fundamentally unstable hardware should fail clearly.
 
 - Do NOT use agent skills unless explicitly told to
 - run lint and typecheck every time you finish a coding task to make sure code is clean
-- don't run dev server for live browser inspection, I will do visual inspection myself
+- dev server is allowed by first check if it is running already, use in-app browser for key visual checks. the final visual and play inspection will be done by me.
 - do NOT commit code, I will do that myself
 - When tuning gameplay values, treat each requested value as the new canonical default: update the constant directly and remove prior tuning history rather than expressing it as chained multipliers or derived adjustments.
 - pay attention to relevant md docs in `docs/` dir, these can include intentions and design principles derived or surfaced during implementation beyond the code itself that are important for further implementing related features. Make sure you always update relevant docs in docs/ after new implementation to avoid stale and outdated references. During the initial implementation, add separate modular docs to document different parts of the game system
