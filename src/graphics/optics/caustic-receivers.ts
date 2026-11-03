@@ -1,5 +1,5 @@
 import * as THREE from 'three/webgpu';
-import { float, uniform, vec3 } from 'three/tsl';
+import { float, specularF90, uniform, vec3 } from 'three/tsl';
 import type Node from 'three/src/nodes/core/Node.js';
 import type { RefractiveLightField } from './refractive-light.js';
 import type { FacilityShadows } from '../../facilities/shadows.ts';
@@ -9,6 +9,22 @@ export type CausticLighting={color:THREE.Color;irradiance:number;sourceSpread?:T
 type ReceiverOptions={albedo?:Node<'vec3'>;visibility?:Node<'float'>};
 type CausticMaterial=THREE.MeshStandardNodeMaterial|THREE.MeshPhysicalNodeMaterial;
 type GroundBinding={mesh:THREE.Mesh;albedo:Node<'vec3'>;facilities:FacilityShadows;fraction:Node<'float'>;height:number;facilityMask?:Node<'vec2'>};
+
+const baseSpecularSetup=new WeakMap<THREE.MeshPhysicalNodeMaterial,()=>void>();
+
+/** Scale every specular layer of a physical material by a per-pixel occlusion.
+ * The pinned Three ignores `specularIntensityNode`, so the base layer's F0 is
+ * scaled through the IOR (F0 = ((ior-1)/(ior+1))²) and its F90 in the specular
+ * setup; without F90 the grazing-angle sheen would remain fully unoccluded. */
+function occludeSpecular(material:THREE.MeshPhysicalNodeMaterial,occlusion:Node<'float'>) {
+  const reflectance=float((material.ior-1)/(material.ior+1)).mul(occlusion.sqrt());
+  material.iorNode=float(1).add(reflectance).div(float(1).sub(reflectance));
+  material.clearcoatNode=occlusion.mul(material.clearcoat);
+  const hooks=material as unknown as {setupSpecular:()=>void};
+  if(!baseSpecularSetup.has(material))baseSpecularSetup.set(material,hooks.setupSpecular.bind(material));
+  const setup=baseSpecularSetup.get(material)!;
+  hooks.setupSpecular=()=>{setup();specularF90.assign(specularF90.mul(occlusion));};
+}
 
 /** Scene-wide opt-in binding for geometric GPU caustics. */
 export class CausticReceivers {
@@ -63,7 +79,9 @@ export class CausticReceivers {
     const result=groundReceiver(ground.albedo,this.optics,ground.facilities,ground.fraction,ground.height,this.sources,ground.facilityMask);
     ground.facilityMask=result.facilityMask;
     const material=ground.mesh.material as THREE.MeshPhysicalNodeMaterial;
-    material.colorNode=result.color;material.needsUpdate=true;return result.visibility;
+    material.colorNode=result.color;
+    occludeSpecular(material,result.specularOcclusion);
+    material.needsUpdate=true;return result.visibility;
   }
 
   private registerMaterial(material:THREE.Material,options:ReceiverOptions) {

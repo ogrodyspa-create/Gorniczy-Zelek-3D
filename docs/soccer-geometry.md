@@ -17,16 +17,25 @@ distinct treatments are:
 - Transverse roof netting and vertical side netting completing the mesh holes.
 - Exterior dado bands, cornices, pilasters and pilaster capitals.
 - Alternating wall panels with raised louvres.
-- Side roof ribs, alternating fascia tiles and solid triangular corbels.
+- Cantilevered roofs ([`canopy.ts`](../src/worlds/soccer/canopy.ts)): each
+  side and end roof leaves the wall top and sweeps up on a parabola toward the
+  pitch, thinning to a gold rolled bead. Ribs ride the curved upper surface,
+  corbels rise from the wall face into the underside and a coral/cream valance
+  hangs under the leading edge, all placed from the same curve. Collision keeps
+  the former flat roof boxes, which the jelly cannot reach anyway.
+- Two A-frame floodlight banks flank the scoreboard on the far roof, tilted
+  toward the pitch, with eight softly emissive lenses each.
 - Rounded board caps and inset board badges.
 - Terrace riser stripes and paired aisle tread grips.
-- End roof edging and ribs, with framed colour medallions on the end walls.
+- Framed colour medallions on the end walls.
 - Scoreboard rain hood, team-colour tabs and gold underlines.
 - A footed entrance sign with raised lettering and an arrow toward the gate.
 
 These details live in `stadium-details.ts` and batch with the existing static
-finishes. Mounts use shallow keyed joins rather than coincident overlay faces;
-the assembly audit has no new clash exceptions. The sign sits centred in front
+finishes. Mounts use shallow keyed joins rather than coincident overlay faces.
+The audit's bounding-box pre-check cannot measure shallow keying along a curved
+or tilted host, so the roof bead/ribs/corbels, roof-mounted feet and the
+floodlight assembly are named clash allowances. The sign sits centred in front
 of the welcome desk on its +Z side, with a 12 cm wide panel and its highest
 point at 7.5 cm above the ground table. Its foot clears the desk footprint by
 over 1 cm, and the whole panel remains outside the entrance opening.

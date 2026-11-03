@@ -1,7 +1,7 @@
 import * as T from 'three/webgpu';
 import { atan, cos, float, mix, sin, uniform, uv, vec3 } from 'three/tsl';
 import { batch, disposeParts, enamel, part, rounded } from '../../graphics/shared/toy-parts.ts';
-import { closedTube, solidLoft } from '../../graphics/shared/manufactured-geometry.ts';
+import { closedTube, solidLoft, turned } from '../../graphics/shared/manufactured-geometry.ts';
 import type { CollisionBox } from '../collision.ts';
 
 // Portal authoring contract: local +Y is up, +Z is the face normal, and the
@@ -25,9 +25,19 @@ const PORTAL_DATUM=Object.freeze({
   // the extra depth is what makes the mirrored support read as a joint in side
   // views instead of a floating control slab.
   baseDepth:.020,
-  soleY:-.0776,
-  soleHeight:.0018,
-  soleZ:.0225,
+  // Molded housing: rolled edges and a shallow decorative channel on each face.
+  shellFillet:.003,
+  grooveRadius:.0712,
+  grooveWidth:.004,
+  grooveDepth:.0011,
+  // The two end pods run beneath the ring's flanks and tie both face bars into
+  // one rectangular sled. Four rubber buns carry it on the tabletop.
+  podX:.064,
+  podY:-.0705,
+  podDepth:.056,
+  footRadius:.0055,
+  footHeight:.0028,
+  footZ:.019,
 });
 const PORTAL_GROUP_Y=.080;
 const PORTAL_RING_SEGMENTS=32;
@@ -130,11 +140,38 @@ export function portalCollisionBoxes(portalX:number,portalZ:number):CollisionBox
     // Match the visible bar's actual dimensions; the global facility margin
     // supplies the tiny contact skin without making an invisible floor wall.
     addOrientedBox(boxes,portalX,portalZ,0,PORTAL_DATUM.baseY,face*.020,.112,PORTAL_DATUM.baseHeight,PORTAL_DATUM.baseDepth);
-    addOrientedBox(boxes,portalX,portalZ,0,PORTAL_DATUM.soleY,face*PORTAL_DATUM.soleZ,.118,PORTAL_DATUM.soleHeight,.018);
-    addOrientedBox(boxes,portalX,portalZ,0,-.068,face*.030,.045,.014,.014);
-    for(const side of [-1,1])addOrientedBox(boxes,portalX,portalZ,side*.064,-.0705,face*.020,.018,.016,.014);
+    addOrientedBox(boxes,portalX,portalZ,0,-.068,face*.031,.046,.016,.014);
+  }
+  for(const side of [-1,1]) {
+    addOrientedBox(boxes,portalX,portalZ,side*PORTAL_DATUM.podX,PORTAL_DATUM.podY,0,.018,.016,PORTAL_DATUM.podDepth);
+    // The buns are low and narrow; one box spans each pair under its pod.
+    addOrientedBox(boxes,portalX,portalZ,side*PORTAL_DATUM.podX,-PORTAL_GROUP_Y+PORTAL_DATUM.footHeight/2,0,PORTAL_DATUM.footRadius*2,PORTAL_DATUM.footHeight,PORTAL_DATUM.footZ*2+PORTAL_DATUM.footRadius*2);
   }
   return boxes;
+}
+
+/** Rolled porthole section: filleted aperture and rim, a shallow channel on
+ * each face. Traced inner wall → front face → outer wall → back face so the
+ * loft's outward normals match the former chamfered profile. */
+function housingRings(segments=128) {
+  const {innerRadius:ri,outerRadius:ro,shellHalfDepth:h,shellFillet:f,grooveRadius:gr,grooveWidth:gw,grooveDepth:gd}=PORTAL_DATUM;
+  const arc=(cx:number,cy:number,r:number,from:number,to:number,steps:number,skipFirst=true)=>
+    Array.from({length:steps+1},(_,i)=>{const a=from+(to-from)*i/steps;return [cx+r*Math.cos(a),cy+r*Math.sin(a)];}).slice(skipFirst?1:0);
+  // Circular channel from its chord (width) and sagitta (depth).
+  const half=gw/2,radius=(half*half+gd*gd)/(2*gd),lift=radius-gd,edge=Math.asin(lift/radius);
+  const groove=(side:number)=>arc(gr,side*(h+lift),radius,side>0?Math.PI+edge:edge,side>0?2*Math.PI-edge:Math.PI-edge,8,false);
+  const front=groove(1),back=groove(-1);
+  const profile=[
+    [ri,-(h-f)],[ri,h-f],
+    ...arc(ri+f,h-f,f,Math.PI,Math.PI/2,6),
+    ...front,
+    ...arc(ro-f,h-f,f,Math.PI/2,0,6,false),
+    [ro,-(h-f)],
+    ...arc(ro-f,-(h-f),f,0,-Math.PI/2,6),
+    ...back,
+    ...arc(ri+f,-(h-f),f,-Math.PI/2,-Math.PI,6).slice(0,-1),
+  ];
+  return Array.from({length:segments},(_,i)=>{const a=i*Math.PI*2/segments;return profile.map(([r,depth])=>[r*Math.cos(a),r*Math.sin(a),depth]);});
 }
 
 export class JellyPortal {
@@ -157,61 +194,63 @@ export class JellyPortal {
     const pearl=enamel(0xf4dcb1),brass=new T.MeshPhysicalNodeMaterial({color:0xc6a36d,metalness:.55,roughness:.3});
     const mint=enamel(0x78dfc6),pink=enamel(0xff8296),lavender=enamel(0xc3a0ff);
     const gasket=enamel(0x546568,.65),rubber=enamel(0x8b938b,.8);
-    // Matched inner/outer profiles own the aperture, front lip and back wall.
-    const profile=[
-      [PORTAL_DATUM.innerRadius,-.0105],
-      [PORTAL_DATUM.innerRadius,.0105],
-      [PORTAL_DATUM.innerRadius+.0015,PORTAL_DATUM.shellHalfDepth],
-      [PORTAL_DATUM.outerRadius-.002,PORTAL_DATUM.shellHalfDepth],
-      [PORTAL_DATUM.outerRadius,.0105],
-      [PORTAL_DATUM.outerRadius,-.0105],
-      [PORTAL_DATUM.outerRadius-.002,-PORTAL_DATUM.shellHalfDepth],
-      [PORTAL_DATUM.innerRadius+.0015,-PORTAL_DATUM.shellHalfDepth],
-    ];
-    const rings=Array.from({length:96},(_,i)=>{const a=i*Math.PI/48;return profile.map(([r,depth])=>[r*Math.cos(a),r*Math.sin(a),depth]);});
-    part(casing,solidLoft(rings,true),pearl).name='aperture-housing';
+    part(casing,solidLoft(housingRings(),true),pearl).name='aperture-housing';
     // Both faces are finished: arrival can happen on either side of the device.
     for(const face of [-1,1]) {
       const ring=(radius:number,depth:number,thickness:number,finish:T.Material,name:string)=>{
-        const path=Array.from({length:96},(_,i)=>{const a=i*Math.PI/48;return new T.Vector3(radius*Math.cos(a),radius*Math.sin(a),face*depth);});
+        const path=Array.from({length:128},(_,i)=>{const a=i*Math.PI/64;return new T.Vector3(radius*Math.cos(a),radius*Math.sin(a),face*depth);});
         part(casing,closedTube(path,thickness,8,true),finish).name=`${name}-${face}`;
       };
-      // The soft seal follows the shared inner aperture datum; its small proud
-      // offset keeps the animated membrane from touching the housing.
-      ring(PORTAL_DATUM.innerRadius-.0012,PORTAL_DATUM.faceDepth-.0004,.0009,gasket,'recessed-aperture-seal');
-      // The brass bead keys 0.5 mm into the shell's front chamfer. The dark seal
-      // and the bead leave a deliberate 1.1 mm radial reveal, like a toy bezel,
-      // rather than stacking coplanar rings over the casing.
-      ring(PORTAL_DATUM.innerRadius+.0018,PORTAL_DATUM.shellHalfDepth+.0005,.0010,brass,'aperture-bezel');
+      // The soft seal lines the mouth of the aperture wall, half buried in it,
+      // so it reads as a fitted gasket and the membrane still clears it.
+      ring(PORTAL_DATUM.innerRadius,PORTAL_DATUM.shellHalfDepth-PORTAL_DATUM.shellFillet-.0004,.0009,gasket,'recessed-aperture-seal');
+      // The brass bead keys into the rolled inner lip, just outside the seal.
+      ring(PORTAL_DATUM.innerRadius+.0018,PORTAL_DATUM.shellHalfDepth+.0003,.0010,brass,'aperture-bezel');
       // Each coloured rail is one continuous swept part: its short radial ends
       // are the designed sockets into the shell, so there are no detached caps
-      // or overlapping retainer boxes along the visible arc. The socket datum
-      // intentionally reaches into the shell wall far enough to read as a
-      // manufactured joint from either face.
+      // or overlapping retainer boxes along the visible arc. A turned boss on
+      // the face marks each socket as a manufactured joint.
       for(let i=0;i<3;i++) {
         const path=portalRailPath(face,i);
-        part(casing,closedTube(path,PORTAL_DATUM.cartridgeTube,10),[mint,pink,lavender][i]).name=`energy-cartridge-${face}-${i}`;
+        part(casing,closedTube(path,PORTAL_DATUM.cartridgeTube,12),[mint,pink,lavender][i]).name=`energy-cartridge-${face}-${i}`;
+        for(const end of [path[0],path[path.length-1]]) {
+          const boss=part(casing,turned([[0,-.0011],[.0040,-.0011],[.0044,-.0005],[.0044,.0004],[.0040,.0009],[0,.0009]],24),brass,end.x,end.y,face*(PORTAL_DATUM.shellHalfDepth+.0002));
+          boss.rotation.x=face*Math.PI/2;boss.name=`cartridge-socket-${face}-${i}`;
+        }
       }
-      // The panel sits 3.5 mm proud of the shell face, leaving a real shadow
-      // reveal instead of cutting through the lower aperture housing.
-      rounded(casing,[.045,.014,.007],gasket,0,-.068,face*.030,.002).name=`control-panel-recess-${face}`;
-      const dial=part(casing,new T.CylinderGeometry(.0045,.0045,.003,24),lavender,-.014,-.068,face*.035);
-      dial.rotation.x=Math.PI/2;dial.name=`destination-dial-${face}`;
-      rounded(casing,[.001,.003,.0008],brass,-.014,-.0668,face*.037);
-      for(let i=0;i<3;i++)rounded(casing,[.003,.002,.001],i===0?mint:pearl,-.003+i*.005,-.068,face*.034,.0005).name=`status-window-${face}-${i}`;
+      // Molded rivet heads ring the outer face, interrupted where rails pass.
+      for(let i=0;i<24;i++) {
+        const a=(i+.5)*Math.PI/12;
+        if([Math.PI/2,Math.PI/2+Math.PI*2/3,Math.PI/2+Math.PI*4/3].some(c=>Math.abs(Math.atan2(Math.sin(a-c),Math.cos(a-c)))<.52))continue;
+        const r=(PORTAL_DATUM.grooveRadius+PORTAL_DATUM.grooveWidth/2+PORTAL_DATUM.outerRadius-PORTAL_DATUM.shellFillet)/2;
+        const rivet=part(casing,turned([[0,-.0004],[.00105,-.0004],[.00105,.0001],[.0008,.00045],[.0004,.0006],[0,.00065]],12),pearl,r*Math.cos(a),r*Math.sin(a),face*PORTAL_DATUM.shellHalfDepth);
+        rivet.rotation.x=face*Math.PI/2;rivet.name=`face-rivet-${face}-${i}`;
+      }
+      // The console leans back toward the viewer like a toy dashboard and keys
+      // into the face bar below it.
+      const console=new T.Group();console.position.set(0,-.068,face*.031);console.rotation.x=-face*.32;casing.add(console);
+      rounded(console,[.046,.016,.007],gasket,0,0,0,.0024).name=`control-panel-recess-${face}`;
+      rounded(console,[.040,.011,.0012],pearl,0,0,face*.0035,.0005).name=`control-panel-face-${face}`;
+      const dial=part(console,turned([[0,-.0016],[.0046,-.0016],[.0050,-.0008],[.0050,.0008],[.0044,.0016],[0,.0016]],28),lavender,-.0125,0,face*.0050);
+      dial.rotation.x=face*Math.PI/2;dial.name=`destination-dial-${face}`;
+      rounded(console,[.0010,.0034,.0010],brass,-.0125,.0018,face*.0068,.0003).name=`dial-pointer-${face}`;
+      for(let i=0;i<3;i++)rounded(console,[.0032,.0024,.0012],i===0?mint:gasket,-.002+i*.0054,0,face*.0044,.0005).name=`status-window-${face}-${i}`;
     }
-    // The lower support is a mirrored pair. Each dial panel therefore lands on
-    // a real load-bearing bar and each face has the same floor datum.
+    // One rectangular sled: mirrored face bars carry the ring and consoles,
+    // end pods pass under the ring's flanks to tie them together, and four
+    // rubber buns are the only floor contact.
     for(const face of [-1,1]) {
       const suffix=face===1?'front':'back';
       rounded(casing,[.112,PORTAL_DATUM.baseHeight,PORTAL_DATUM.baseDepth],pearl,0,PORTAL_DATUM.baseY,face*.020,.004).name=`integrated-power-base-${suffix}`;
-      // One continuous rubber undertray owns the floor contact. It is 1.5 mm
-      // above the tabletop and leaves a 0.7 mm shadow reveal under its bar,
-      // eliminating the former coplanar two-pad flicker.
-      rounded(casing,[.118,PORTAL_DATUM.soleHeight,.018],rubber,0,PORTAL_DATUM.soleY,face*PORTAL_DATUM.soleZ,.0015).name=`rubber-undertray-${suffix}`;
-      for(const side of [-1,1]) {
-        rounded(casing,[.018,.016,.014],side<0?pink:mint,side*.064,-.0705,face*.020,.0045).name=`power-pod-${suffix}-${side}`;
-        for(let i=0;i<3;i++)rounded(casing,[.008,.001,.001],gasket,side*.064,-.0705+i*.003,face*.027,.0002).name=`pod-vent-${suffix}-${side}-${i}`;
+      rounded(casing,[.100,.0016,.0012],brass,0,PORTAL_DATUM.baseY-.0035,face*.0302,.0005).name=`base-trim-${suffix}`;
+    }
+    for(const side of [-1,1]) {
+      const label=side<0?'left':'right';
+      rounded(casing,[.018,.016,PORTAL_DATUM.podDepth],side<0?pink:mint,side*PORTAL_DATUM.podX,PORTAL_DATUM.podY,0,.0045).name=`power-pod-${label}`;
+      for(const face of [-1,1])for(let i=0;i<3;i++)rounded(casing,[.009,.0011,.0012],gasket,side*PORTAL_DATUM.podX,PORTAL_DATUM.podY-.003+i*.003,face*(PORTAL_DATUM.podDepth/2+.0002),.0003).name=`pod-vent-${label}-${face}-${i}`;
+      for(const face of [-1,1]) {
+        const foot=part(casing,turned([[0,0],[PORTAL_DATUM.footRadius-.0012,0],[PORTAL_DATUM.footRadius,.0009],[PORTAL_DATUM.footRadius,PORTAL_DATUM.footHeight],[0,PORTAL_DATUM.footHeight]],24),rubber,side*PORTAL_DATUM.podX,-PORTAL_GROUP_Y,face*PORTAL_DATUM.footZ);
+        foot.name=`rubber-foot-${label}-${face===1?'front':'back'}`;
       }
     }
     this.collisionBoxes=portalCollisionBoxes(x,z);

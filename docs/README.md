@@ -32,6 +32,8 @@ portal-linked play worlds, and a deliberately measured optical treatment.
 - [Input, audio, and UI](input-audio-ui.md) — desktop and touch controls,
   picking, camera behavior, flavor selection, facial animation, sound, and
   responsive presentation.
+- [Spatial audio](spatial-audio.md) — camera-relative emitters, distance and
+  direction cues, and the reference-fitted procedural grass steps.
 - [Assets and verification](assets-and-verification.md) — generated model
   data, build scripts, test coverage, benchmarks, and operational commands.
 - [Source structure](source-structure.md) — the application, shared facility,

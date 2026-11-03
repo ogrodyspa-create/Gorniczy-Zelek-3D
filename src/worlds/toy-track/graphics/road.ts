@@ -40,7 +40,9 @@ export function makeToyRoad(root:T.Group) {
   const atStart=along.abs().lessThan(.014).and(across.abs().lessThan(half-.008));
   const checker=along.add(.014).div(.014).floor().add(across.add(half).div(.014).floor()).mod(2);
   const paint=mix(vec3(.08,.16,.18),vec3(.97,.88,.68),checker);
-  const curb=positionLocal.y.greaterThan(ROAD_HEIGHT+.0001);
+  // Outside the asphalt edge is curb all the way down to the tabletop; height
+  // alone painted the curb's lowest 3 mm road-teal along both outer walls.
+  const curb=positionLocal.y.greaterThan(ROAD_HEIGHT+.0001).or(uv().y.abs().greaterThan(CURB_ROAD_EDGE+.0005));
   const dash=uv().y.abs().lessThan(.0015).and(uv().x.mod(.038).lessThan(.017));
   const seam=uv().x.mod(trackCurve.getLength()/16).lessThan(.0007);
   const road=mix(mix(vec3(.18,.39,.38),vec3(.08,.19,.18),float(seam)),vec3(.97,.88,.68),float(dash));

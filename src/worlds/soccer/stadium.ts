@@ -9,6 +9,7 @@ import type { CollisionBox } from '../../facilities/collision.ts';
 import { stadiumEntrance } from './entrance.ts';
 import { formedProfile } from './craft.ts';
 import { stadiumDetails } from './stadium-details.ts';
+import { canopyBead, canopyShell, endCanopy, sideCanopy } from './canopy.ts';
 import { createFallbackGrassTextures, disposeGrassTextures, turfMaterial, type GrassTextureSet } from './turf.ts';
 
 /** Named manufactured solids survive until audit; runtime batches by finish. */
@@ -55,9 +56,12 @@ export class SoccerStadium {
         }
         for(let aisle=0;aisle<4;aisle++)addBox(`side-step-${side}-${row}-${aisle}`,[.061,.004,.032],side*(inner+.036),y+.002,-1.52+aisle*.87,gold,.001);
       }
-      // Thin molded canopy over the outer seats; keyed into the perimeter wall.
-      addBox(`side-canopy-${side}`,[.22,.015,3.54],side*1.305,.3085,0,blue,.005,true);
-      addBox(`canopy-trim-${side}`,[.008,.012,3.50],side*1.191,.307,0,gold,.002);
+      // Cantilevered molded roof over the outer seats, keyed into the perimeter
+      // wall, with a rolled gold leading edge. Collision keeps the former slab.
+      const roof=sideCanopy(side);
+      canopyShell(this.staticParts,roof,blue,`side-canopy-${side}`);
+      canopyBead(this.staticParts,roof,gold,`canopy-trim-${side}`);
+      this.boxes.push(soccerBox(side*1.305,.3085,0,.22,.015,3.54));
     }
     for(const end of [-1,1]) {
       const sections=end===-1?[[-1.034,-GOAL.width/2],[GOAL.width/2,1.034]]:[[-1.034,-GOAL.width/2],[GOAL.width/2,ENTRANCE.x-ENTRANCE.width/2],[ENTRANCE.x+ENTRANCE.width/2,1.034]];
@@ -81,14 +85,18 @@ export class SoccerStadium {
           }
           }
         }
-        addBox(`end-canopy-${end}-${section}`,[span.width,.015,.13],span.x,.3085,end===1?ENTRANCE.z-.045:-1.855,blue,.005,true);
+        const roofZ=end===1?ENTRANCE.z-.045:-1.855,roof=endCanopy(roofZ+end*.065,roofZ-end*.065,span.x-span.width/2,span.x+span.width/2);
+        canopyShell(this.staticParts,roof,blue,`end-canopy-${end}-${section}`);
+        canopyBead(this.staticParts,roof,gold,`end-roof-edge-${end}-${section}`,.0045);
+        this.boxes.push(soccerBox(span.x,.3085,roofZ,span.width,.015,.13));
       }
     }
     stadiumEntrance(this.staticParts,this.boxes,cream,blue,gold,coral);
     // Goals are rounded continuous U frames; strings are closed tubes with declared knotted joins.
     for(const end of [-1,1])this.goal(end,net);
     // A restrained scoreboard mounted on two feet above the far canopy.
-    for(const x of [-.18,.18])addBox(`score-support-${x}`,[.012,.045,.018],x,.3385,-1.905,gold,.002,true);
+    // Feet stand on the curved roof's upper surface just in front of the wall.
+    for(const x of [-.18,.18])addBox(`score-support-${x}`,[.012,.0471,.018],x,.33765,-1.905,gold,.002,true);
     addBox('scoreboard-shell',[.48,.13,.030],0,.426,-1.905,blue,.007,true);
     addBox('scoreboard-inset',[.444,.094,.004],0,.426,-1.887,cream,.002);
     this.scoreboard.name='score-digits';this.group.add(this.scoreboard);

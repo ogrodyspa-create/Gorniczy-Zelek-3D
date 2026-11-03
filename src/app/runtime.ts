@@ -193,11 +193,11 @@ export async function startGame(stage:(s:string)=>void,fail:(e:unknown)=>void) {
       const shadowSyncRevision=facilityShadows.update(renderer);
       facilityShadows.surfaces.update(renderer,shadowSyncRevision);
       input.update(dt);
-      sound.listen(camera);
       const tricycle=worlds.inToys?worlds.tricycle?.physics:undefined;
       if(tricycle)sound.tricycleMotion(tricycle.riding?tricycle.rollingSpeed:0,tricycle.position.x,tricycle.position.y+.025,tricycle.position.z);
       const soccer=worlds.inSoccer?worlds.soccer?.physics:undefined;
       if(soccer)sound.soccerMotion(soccer.onField&&rig.grounded&&rig.move.lengthSq()>.01?Math.hypot(rig.velocity.x,rig.velocity.z):0);
+      sound.listen(camera,body.center);
       transport.follow();
       optics.update(renderer,body);
       table.mesh.position.x=body.center.x;table.mesh.position.z=body.center.z;

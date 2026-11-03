@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { Box3 } from 'three/webgpu';
 import { Tricycle } from '../src/worlds/toy-track/facilities/tricycle/graphics.ts';
 import { JellyPortal } from '../src/facilities/portal/graphics.ts';
-import { ToyTrack, TOY_FLOOR_CLEARANCE } from '../src/worlds/toy-track/graphics/track.ts';
+import { ToyTrack } from '../src/worlds/toy-track/graphics/track.ts';
 import { fitGrips } from '../src/worlds/toy-track/facilities/tricycle/fit.ts';
 import { SoftBody } from '../src/physics/soft-body.js';
 import { loadModel } from './load-model.mjs';
@@ -18,12 +18,16 @@ assert(road?.isMesh,'track retains its integral road mesh');
 assert.equal(road.material.polygonOffset,true,'road owns depth against the tabletop receiver');
 assert(road.material.polygonOffsetFactor<0&&road.material.polygonOffsetUnits<0,'road depth bias pulls its surface toward the camera');
 portal.group.updateMatrixWorld(true);
-const portalTrays=['front','back'].map(face=>portal.group.getObjectByName(`rubber-undertray-${face}`));
-assert(portalTrays.every(Boolean),'portal has mirrored continuous rubber undertrays');
-for(const portalTray of portalTrays) {
-  portalTray.geometry.computeBoundingBox();
-  const trayBounds=portalTray.geometry.boundingBox.clone().applyMatrix4(portalTray.matrixWorld);
-  assert(trayBounds.min.y>.001,'portal undertrays stay above the tabletop to avoid floor z-fighting');
+const portalFeet=['left','right'].flatMap(side=>['front','back'].map(face=>portal.group.getObjectByName(`rubber-foot-${side}-${face}`)));
+assert(portalFeet.every(Boolean),'portal sled stands on four rubber feet');
+for(const foot of portalFeet) {
+  const bounds=new Box3().setFromObject(foot);
+  assert(Math.abs(bounds.min.y)<.00001,'portal feet rest on the tabletop');
+}
+for(const side of ['left','right']) {
+  const pod=portal.group.getObjectByName(`power-pod-${side}`);
+  assert(pod,'portal end pods tie the face bars together');
+  for(const face of ['front','back'])assert(new Box3().setFromObject(pod).intersectsBox(new Box3().setFromObject(portal.group.getObjectByName(`integrated-power-base-${face}`))),'each pod keys into both face bars');
 }
 const portalHousing=portal.group.getObjectByName('aperture-housing');
 assert(portalHousing,'portal has a continuous aperture housing');
@@ -53,7 +57,8 @@ assert.equal(floorContactMeshes.filter(object=>object.name==='house stepping sto
 assert.equal(floorContactMeshes.filter(object=>object.name==='tree-plinth').length,14,'all decorative trees retain their plinth');
 for(const mesh of floorContactMeshes) {
   const bounds=new Box3().setFromObject(mesh);
-  assert(bounds.min.y>TOY_FLOOR_CLEARANCE-.00001,`${mesh.name} stays clear of the tabletop depth plane`);
+  // The tabletop's own depth bias resolves contact; floor contacts rest on it.
+  assert(Math.abs(bounds.min.y)<.00001,`${mesh.name} rests on the tabletop`);
 }
 for(const kind of ['brick','pen','bottle','eraser','spool']){const prop=track.group.getObjectByName(kind);assert(prop&&prop.scale.x===1&&prop.scale.y===1&&prop.scale.z===1,`${kind} is repositioned but not scaled`);}
 let failed=0,parts=0;
@@ -77,7 +82,13 @@ for(const root of [bike.group,portal.group]) {
   // overlaps the shell and each face control panel so the hardware cannot read
   // as detached in a side view. Keep those exact allowances narrow and audit
   // every other solid pair normally.
-  const clashAllow=root.name==='jelly-portal'?[['aperture-housing','integrated-power-base'],['control-panel-recess','integrated-power-base']]:undefined;
+  // The sled's pods, socket bosses, rivets and console face are keyed
+  // fittings in the same way.
+  const clashAllow=root.name==='jelly-portal'?[['aperture-housing','integrated-power-base'],['control-panel-recess','integrated-power-base'],
+    ['power-pod','integrated-power-base'],['rubber-foot','power-pod'],['cartridge-socket','aperture-housing'],['cartridge-socket','energy-cartridge'],
+    ['face-rivet','aperture-housing'],['control-panel-face','control-panel-recess'],['destination-dial','control-panel-recess'],['destination-dial','control-panel-face'],
+    ['dial-pointer','destination-dial'],['status-window','control-panel-face'],['status-window','control-panel-recess'],['base-trim','integrated-power-base'],['pod-vent','power-pod'],
+    ['recessed-aperture-seal','aperture-housing'],['aperture-bezel','aperture-housing']]:undefined;
   const report=auditGeometry(root,{planeDistance:.00003,overlapArea:1e-8,planeCellDistance:.001,clash:true,clashDepth:.002,clashCellSize:.01,clashAllow,top:200});
   console.log(root.name,report.clash.map(pair=>[pair.a,pair.b]));logAuditReport({...report,clash:[]});
   assert(!report.truncated);if(report.zfight.length||report.defects.length||report.noMaterial.length)failed++;

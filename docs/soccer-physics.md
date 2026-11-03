@@ -68,15 +68,11 @@ Player/keeper collision uses a moving compound body envelope and reciprocal
 finite-mass recoil. It preserves separate core, head, arms and lower body rather
 than filling the silhouette with one large box.
 
-Audio uses the `grass_movement_sound_lab_v2.html` contact graph for pitch
-movement: brown-plus-smoothed noise, the lab's high-pass/band-pass/high-shelf
-filters, diffuse low-mid turf pressure, and its landing-only settling sweep.
-The run layer is the lab's quiet continuous bed plus alternating `.72`–`.80`
-foot contacts at its fixed `3.55 Hz` cadence with its small timing jitter;
-soccer movement speed does not retime the sound. Takeoff and landing use the
-lab's `.24 s` and `.38 s` envelopes. The complete grass layer is scaled to
-`60%` of the lab level, reducing walking and jumping volume by 40% without
-changing its pace or filter character.
+Run steps are reference-fitted procedural grass footsteps at a fixed `3.55 Hz`
+cadence; soccer movement speed does not retime them. Takeoff and landing use the
+`grass_movement_sound_lab_v2.html` contact graph at `60%` of the lab level. See
+[Spatial audio](spatial-audio.md) for the step synthesis and how footsteps,
+jumps and ball events are placed relative to the camera.
 The generic solid-surface contact path is suppressed for player contacts on the
 pitch, so it cannot add a bongo-like layer to grass. Posts, saves and goals keep
 their separate event envelopes. Mute, hidden tabs, reset, portal menus, travel

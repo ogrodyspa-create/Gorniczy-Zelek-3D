@@ -1,3 +1,5 @@
+import type { SpatialAudio, SpatialEmitter } from '../../../../app/spatial-audio.ts';
+
 const ROLL_START_SPEED=.006;
 const MAX_TRICYCLE_SPEED=.34;
 
@@ -50,23 +52,24 @@ export class TricycleRollAudio {
   private squeakGain:GainNode|null=null;
   private filter:BiquadFilterNode|null=null;
   private squeakFilter:BiquadFilterNode|null=null;
-  private panner:StereoPannerNode|null=null;
   private buffer:AudioBuffer|null=null;
   private squeakBuffer:AudioBuffer|null=null;
   readonly context:AudioContext;
-  readonly output:AudioNode;
-  constructor(context:AudioContext,output:AudioNode){this.context=context;this.output=output;}
+  /** Distance and direction come from the shared camera-relative emitter. */
+  private readonly emitter:SpatialEmitter;
+  constructor(context:AudioContext,spatial:SpatialAudio){this.context=context;this.emitter=spatial.emitter({reference:.55});}
 
-  update(speed:number,distance:number,pan:number) {
+  update(speed:number,x:number,y:number,z:number) {
     const ctx=this.context;
     if(ctx.state!=='running')return;
+    this.emitter.set(x,y,z);
     const amount=clamp01((Math.abs(speed)-ROLL_START_SPEED)/(MAX_TRICYCLE_SPEED-ROLL_START_SPEED));
     if(amount>0&&!this.source)this.start();
-    if(!this.source||!this.squeakSource||!this.gain||!this.squeakGain||!this.filter||!this.squeakFilter||!this.panner)return;
-    const now=ctx.currentTime,attenuation=1/(1+(distance/.55)**2);
+    if(!this.source||!this.squeakSource||!this.gain||!this.squeakGain||!this.filter||!this.squeakFilter)return;
+    const now=ctx.currentTime;
     // Keep this beneath impacts/laughter: it should read as rolling texture,
     // not as an engine or a second music layer.
-    const level=amount<=0?0:.042*(.20+.80*Math.sqrt(amount))*attenuation;
+    const level=amount<=0?0:.042*(.20+.80*Math.sqrt(amount));
     this.gain.gain.setTargetAtTime(level,now,.045);
     this.filter.frequency.setTargetAtTime(240+amount*430,now,.055);
     this.source.playbackRate.setTargetAtTime(.48+amount*1.42,now,.07);
@@ -74,11 +77,10 @@ export class TricycleRollAudio {
     // separate source makes the chirps survive the tyre filter instead of
     // disappearing into the rolling texture, while the same amount/attenuation
     // gate guarantees silence unless the rider is moving.
-    const squeakLevel=amount<=0?0:.105*(.34+.66*Math.sqrt(amount))*attenuation;
+    const squeakLevel=amount<=0?0:.105*(.34+.66*Math.sqrt(amount));
     this.squeakGain.gain.setTargetAtTime(squeakLevel,now,.06);
     this.squeakFilter.frequency.setTargetAtTime(700+amount*320,now,.07);
     this.squeakSource.playbackRate.setTargetAtTime(.82+amount*.50,now,.09);
-    this.panner.pan.setTargetAtTime(Math.max(-.65,Math.min(.65,pan)),now,.04);
   }
 
   stop() {
@@ -89,8 +91,8 @@ export class TricycleRollAudio {
     if(source){source.stop();source.disconnect();}
     if(squeakSource){squeakSource.stop();squeakSource.disconnect();}
     this.gain?.disconnect();this.squeakGain?.disconnect();
-    this.filter?.disconnect();this.squeakFilter?.disconnect();this.panner?.disconnect();
-    this.gain=null;this.squeakGain=null;this.filter=null;this.squeakFilter=null;this.panner=null;
+    this.filter?.disconnect();this.squeakFilter?.disconnect();
+    this.gain=null;this.squeakGain=null;this.filter=null;this.squeakFilter=null;
   }
 
   dispose(){this.stop();this.buffer=null;this.squeakBuffer=null;}
@@ -111,15 +113,15 @@ export class TricycleRollAudio {
     const ctx=this.context;this.prepare();
     const source=ctx.createBufferSource(),squeakSource=ctx.createBufferSource();
     const filter=ctx.createBiquadFilter(),squeakFilter=ctx.createBiquadFilter();
-    const gain=ctx.createGain(),squeakGain=ctx.createGain(),panner=ctx.createStereoPanner();
+    const gain=ctx.createGain(),squeakGain=ctx.createGain();
     source.buffer=this.buffer;source.loop=true;source.playbackRate.value=.48;
     squeakSource.buffer=this.squeakBuffer;squeakSource.loop=true;squeakSource.playbackRate.value=.82;
-    filter.type='bandpass';filter.frequency.value=240;filter.Q.value=.55;gain.gain.value=0;panner.pan.value=0;
+    filter.type='bandpass';filter.frequency.value=240;filter.Q.value=.55;gain.gain.value=0;
     squeakFilter.type='bandpass';squeakFilter.frequency.value=650;squeakFilter.Q.value=1.15;squeakGain.gain.value=0;
-    source.connect(filter).connect(gain).connect(panner).connect(this.output);
-    squeakSource.connect(squeakFilter).connect(squeakGain).connect(panner);
+    source.connect(filter).connect(gain).connect(this.emitter.input);
+    squeakSource.connect(squeakFilter).connect(squeakGain).connect(this.emitter.input);
     this.source=source;this.squeakSource=squeakSource;this.filter=filter;this.squeakFilter=squeakFilter;
-    this.gain=gain;this.squeakGain=squeakGain;this.panner=panner;
+    this.gain=gain;this.squeakGain=squeakGain;
     source.start(ctx.currentTime);squeakSource.start(ctx.currentTime);
   }
 }

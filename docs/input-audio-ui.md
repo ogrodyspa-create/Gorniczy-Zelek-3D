@@ -168,24 +168,22 @@ is used. Audio failure does not block the game.
 Body contact uses no audio files. It combines three damped sine membrane modes
 with a short band-passed noise transient. Foot contacts use a higher transient
 band than body contacts, and landing contacts have an added impact lift so a
-jump landing remains audible. Strength is derived from impact speed. The sound
-listener follows the camera and stores its right vector for facility panning.
+jump landing remains audible. Strength is derived from impact speed. Every
+effect, including these body contacts, is attenuated by distance and cued by
+direction relative to the camera; see [Spatial audio](spatial-audio.md).
 Tricycle collisions reuse the body-contact texture but trigger only on a meaningful
 new impact; sustained obstacle contact is held as one contact so it cannot retrigger
 at the 240 Hz physics rate. Landing on a raised toy-track curb feeds its downward
 impact into the same body-contact debounce, so it sounds like an ordinary floor
 landing rather than a separate facility effect.
 
-Soccer uses the `grass_movement_sound_lab_v2.html` graph for pitch movement. Its
-contacts use the lab's brown-plus-smoothed noise through the high-pass,
-band-pass and high-shelf chain, with diffuse low-mid turf pressure and the
-landing-only settling sweep. Running adds the lab's quiet continuous surface
-bed beneath its alternating `.72`–`.80` foot contacts at the lab's fixed `3.55
-Hz` cadence with its small timing jitter; game movement speed does not retime
-the sound. Takeoff and landing use the lab's exact `.24 s` and `.38 s` contact
-envelopes. The game scales the complete grass layer to `60%` of the lab level,
-reducing both walking and jumping volume by 40% without changing their pace or
-filter character. While the player is on
+Soccer running uses reference-fitted procedural grass steps at a fixed `3.55 Hz`
+cadence; game movement speed does not retime them (see
+[Spatial audio](spatial-audio.md)). Takeoff and landing use the
+`grass_movement_sound_lab_v2.html` graph: brown-plus-smoothed noise through the
+high-pass, band-pass and high-shelf chain, with diffuse low-mid turf pressure,
+the landing-only settling sweep and the lab's exact `.24 s` and `.38 s`
+envelopes, scaled to `60%` of the lab level. While the player is on
 the pitch, the generic solid-surface contact sound is suppressed so it cannot
 layer a bongo-like tone over the grass sounds. The layer stops immediately off
 the pitch and shares the normal mute, reset, travel, hidden-tab and disposal
@@ -194,7 +192,7 @@ lifecycle.
 A moving tricycle adds one deliberately quiet continuous procedural rolling
 texture. It begins only above a small motion threshold, follows absolute vehicle
 speed with smooth gain/filter/rate changes, and uses the same camera-relative
-distance attenuation and stereo direction as other positional effects. The layer
+spatial emitter model as every other effect. The layer
 is stopped together with facility audio on mute, reset, world travel, hidden-tab
 cleanup and disposal. A separate higher-band squeak layer adds two subdued axle
 chirps per sample cycle through the same movement gate and spatial transport.
@@ -206,8 +204,8 @@ cooldowns. Swing creaks use meaningful angular speed and the incoming speed
 peak at a reversal rather than absolute seat angle, so a seat held high remains
 quiet. Center-crossing air sounds also require a real crossing with meaningful
 speed. `FacilityAudio` turns those events into deterministic cached PCM
-variants, attenuates them by distance, pans them in stereo, keeps at most six
-voices, and ignores facilities farther than `.9` m.
+variants, plays them through one spatial emitter per facility, keeps at most six
+voices, and ignores facilities farther than `.9` m from the camera.
 
 Mute fades the master gain and stops active facility voices. Hiding the tab also
 stops facility voices; reset stops and clears them. Disposal aborts listeners,

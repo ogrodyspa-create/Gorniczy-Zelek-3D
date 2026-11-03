@@ -264,8 +264,8 @@ other receivers retain the existing plane-corrected path. See
 Each facility owns a `FacilityMotionSound` instance and emits semantic events
 from fixed physics steps. The swing emits at hinge reversals and fast bottom
 crossings. The trampoline emits on landing and early spring recovery. The
-events carry strength and a world position; `JellySound` handles distance,
-stereo placement, mute state, and voice limits. The complete audio path is
+events carry strength and a world position; `JellySound` handles
+camera-relative distance and direction, mute state, and voice limits. The complete audio path is
 documented in [Input, audio, and UI](input-audio-ui.md).
 
 ## Performance invariants

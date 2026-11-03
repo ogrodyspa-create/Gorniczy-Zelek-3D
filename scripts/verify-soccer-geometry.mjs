@@ -39,6 +39,10 @@ stadium.group.traverse(mesh=>{
 const bounds=new Box3().setFromObject(stadium.turf),measurements={width:bounds.max.x-bounds.min.x,length:bounds.max.z-bounds.min.z,opening:ENTRANCE.width,arrivalClearance:SOCCER_PORTAL.z-.1-(ENTRANCE.z+.043),goalRouteClearance:ENTRANCE.x-ENTRANCE.width/2-(GOAL.width/2+GOAL.post),concourseDepth:ENTRANCE.z-.26-.038-(FIELD.length/2+GOAL.depth)};
 assertGeometryContract(runGeometryContract({name:'soccer dimensions',checks:[nearCheck('width',m=>m.width,FIELD.width,1e-6),nearCheck('length',m=>m.length,FIELD.length,1e-6),minimumCheck('entry opening',m=>m.opening,.25),minimumCheck('camera-side arrival clearance',m=>m.arrivalClearance,.045),minimumCheck('entrance does not lead into goal',m=>m.goalRouteClearance,.15),minimumCheck('clear concourse behind net',m=>m.concourseDepth,.25)]},measurements));
 const hingeAllow=[];for(const side of [-1,1])for(const y of [.042,.18]){hingeAllow.push(['entrance-arch',`gate-hinge-${side}-${y}`],[`soccer-stadium/stadium-parts/open-gate-${side}/gate-leaf-frame`,`gate-hinge-${side}-${y}`]);}
+// Each roof's rolled bead deliberately wraps its thin leading edge.
+// Curved ribs ride the curved roof; their AABB overlap spans the whole sweep.
+hingeAllow.push(['side-canopy','canopy-trim'],['end-canopy','end-roof-edge'],['side-canopy','roof-rib'],['end-canopy','end-roof-rib'],['side-canopy','roof-corbel'],
+  ['end-canopy','floodlight-shoe'],['end-canopy','score-support'],['floodlight','floodlight']);
 const options={planeDistance:.000025,overlapArea:2e-8,planeCellDistance:.001,clash:true,clashDepth:.0015,clashCellSize:.02,maxTriangles:600000,top:100,clashAllow:hingeAllow};
 const report=auditGeometry(stadium.group,{...options,skip:mesh=>mesh.userData.aggregate===true});logAuditReport(report);
 assert(!report.truncated&&report.zfight.length===0&&report.defects.length===0&&report.noMaterial.length===0&&report.clash.length===0,'named manufactured assembly must pass');

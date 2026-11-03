@@ -30,13 +30,9 @@ the baby enters the 240 Hz narrow phase. The tricycle's separate wheel/road
 constraint still uses the unchanged road-facing curb edge, so its driving
 boundary is not loosened by the wider walking platform.
 
-Thin decorative floor contacts use a shared 1.2 mm visual clearance above the
-tabletop depth plane. The house stepping stones are lifted by that datum, and
-each tree carries the same clearance through its plinth, trunk, and crown; the
-tree's walking collision envelope starts at the same height. This keeps their
-grazing-view side faces from competing with the separate tabletop mesh for
-depth ownership while remaining visually grounded by the floor shadow/contact
-passes.
+Houses, stepping stones and tree plinths rest directly on the tabletop. The
+tabletop does not write depth (see [Rendering](rendering-and-materials.md)), so
+floor contacts can never be hidden by it and need no visual lift.
 
 The road keeps its coral borders, connector seams, brass pins, center dashes and
 a checkered start beneath bunting. A studded brick, pen, bottle, eraser and
@@ -53,6 +49,9 @@ The integral road material has a small camera-facing depth bias so its thin slab
 keeps deterministic ownership over the much larger wooden tabletop receiver at
 the mounted camera's grazing angle. This is render-only: the authored road top,
 wheel support height, obstacle placement and walking collision remain unchanged.
+The road shader paints curb coral outside the asphalt edge all the way down to
+the tabletop; colouring by height alone had left a road-teal stripe along the
+bottom 3 mm of both outer curb walls.
 
 Static parts are baked in assembly-local coordinates and merged by finish. The
 vehicle batches each wheel, saddle and fork shell separately to preserve motion.
@@ -60,9 +59,14 @@ Construction is deterministic, with no per-frame geometry generation.
 
 ## Seat steering mechanism
 
-The wheelbase is 9 cm, with two rear wheels and a larger front wheel. The
-enamel frame supports a shallow oval saddle sized for the lower body, a padded
-back hoop, brass side grip risers and foot rests. Saddle and grips rotate
+The wheelbase is 9 cm, with two rear wheels and a larger front wheel. Each wheel
+is a crowned balloon tyre with two shallow tread grooves on a channelled rim,
+a teal hub disc with raised spokes, a brass hub barrel and domed axle nuts. The
+fork carries a turned headset tube with a domed cap, a molded crown and a
+narrow mudguard with rolled coral edge beads. Pedals and foot rests have rubber
+tread bars; the pedals carry them on both faces because either face is up as
+the cranks turn. The enamel frame supports a shallow oval saddle sized for the
+lower body, a padded back hoop, brass side grip risers and foot rests. Saddle and grips rotate
 together. Equal transverse crank arms under the saddle and at the front
 spindle connect through two constant-length rods: a parallel four-bar linkage.
 Seat and front fork therefore share yaw. Rods follow their actual pin positions;
@@ -131,7 +135,7 @@ allowing a later genuine re-impact to sound again.
 Tricycle translation also drives one quiet, continuous procedural rolling layer.
 It is silent below 6 mm/s, then raises a filtered tyre/tread texture smoothly with
 actual planar vehicle speed; playback rate and filter frequency increase with
-speed, while camera-relative distance and stereo pan keep it spatially subdued.
+speed, while the camera-relative spatial emitter keeps it spatially subdued.
 The loop is not an engine sound and remains below impact/laughter levels. It is
 stopped on mute, reset, portal transition, hidden-tab cleanup and disposal.
 A faint pair of short, rounded axle squeaks runs as a separate filtered layer over

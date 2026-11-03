@@ -31,7 +31,15 @@ export function makeTable(_optics:RefractiveLightField,light:{color:THREE.Color;
   // Plane UV-v points toward -Z; the metre-scaled world UV points toward +Z.
   material.normalNode=normalMap(texture(normal,uv),vec2(.27,-.27));
   material.roughnessNode=texture(roughness,uv).r.mul(.30).add(.12);
+  // Nothing in any world lies below the tabletop and the orbit never goes
+  // under it, so the floor never legitimately hides anything. Letting it
+  // write depth made every foot, base and curb compete with it over a
+  // near-tangent band only micrometres apart; that band won or lost for
+  // single frames while moving. Draw the tabletop first without depth writes
+  // so whatever rests on it always owns the contact edge.
+  material.depthWrite=false;
   const mesh=new THREE.Mesh(new THREE.PlaneGeometry(200,200),material);
+  mesh.renderOrder=-1;
   mesh.rotation.x=-Math.PI/2;mesh.position.y=-.00005;mesh.receiveCaustics=true;
   // Keep the table's established facility-shadow mask while moving the actual
   // caustic sampling into the same reusable receiver path as scene objects.

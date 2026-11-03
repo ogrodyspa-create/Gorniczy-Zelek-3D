@@ -15,8 +15,6 @@ const CURB_ACTIVE_BOX_COUNT=2*(CURB_NEIGHBOR_SEGMENTS*2+1);
 const CURB_ACTIVE_DISTANCE=.11;
 const TREE_COLLISION_DIAMETER=.030;
 const TREE_COLLISION_HEIGHT=.054;
-/** Keep thin decorative floor contacts separate from the tabletop depth plane. */
-export const TOY_FLOOR_CLEARANCE=.0012;
 const STEP_HEIGHT=.001;
 
 /** A manufactured ribbon with inset seams, contrasting rolled edges and tabletop props. */
@@ -104,7 +102,7 @@ export class ToyTrack {
       const houseBox=box(x,.041*TRACK_SCENERY_SCALE,z,.083*TRACK_SCENERY_SCALE,.082*TRACK_SCENERY_SCALE,.07*TRACK_SCENERY_SCALE);
       this.boxes.push(houseBox);this.obstacleBoxes.push(houseBox);this.vehicleColliders.push(tricycleBoxCollider(houseBox));
       for(let i=0;i<4;i++) {
-        const stone=part(this.group,steppingStone,cream,x,TOY_FLOOR_CLEARANCE+STEP_HEIGHT/2,z+(.044+i*.015)*TRACK_SCENERY_SCALE);
+        const stone=part(this.group,steppingStone,cream,x,STEP_HEIGHT/2,z+(.044+i*.015)*TRACK_SCENERY_SCALE);
         stone.name='house stepping stone';
       }
     }
@@ -117,7 +115,7 @@ export class ToyTrack {
       const offset=infield?-.14*TRACK_RADIUS_SCALE:CURB_OUTER_EDGE+.034,p=trackPoint(t,offset);
       if(p.distanceTo(portalPosition)<.30)continue;
       const treeScale=infield?TRACK_SCENERY_SCALE:1;
-      const tree=new T.Group();tree.name=infield?'scaled-infield-tree':'trackside-tree';tree.position.set(p.x,TOY_FLOOR_CLEARANCE,p.z);tree.scale.setScalar(treeScale);this.group.add(tree);
+      const tree=new T.Group();tree.name=infield?'scaled-infield-tree':'trackside-tree';tree.position.set(p.x,0,p.z);tree.scale.setScalar(treeScale);this.group.add(tree);
       part(tree,treeTrunk,gold,0,.013,0);
       part(tree,treeCrown,i%2?blue:coral,0,.034,0).scale.set(.8,1.4,.8);
       part(tree,treePlinth,cream,0,.002,0).name='tree-plinth';
@@ -125,7 +123,7 @@ export class ToyTrack {
       // This is intentionally much cheaper than matching the low-poly mesh and
       // belongs only to jelly collision; the road constraint already keeps the
       // tricycle away from these trees.
-      const treeBox=box(p.x,TOY_FLOOR_CLEARANCE+TREE_COLLISION_HEIGHT*treeScale/2,p.z,TREE_COLLISION_DIAMETER*treeScale,TREE_COLLISION_HEIGHT*treeScale,TREE_COLLISION_DIAMETER*treeScale);
+      const treeBox=box(p.x,TREE_COLLISION_HEIGHT*treeScale/2,p.z,TREE_COLLISION_DIAMETER*treeScale,TREE_COLLISION_HEIGHT*treeScale,TREE_COLLISION_DIAMETER*treeScale);
       treeBox.margin=.0008;this.treeBoxes.push(treeBox);this.boxes.push(treeBox);
     }
     // Start bunting is repositioned to the wider curb but retains its original scale.

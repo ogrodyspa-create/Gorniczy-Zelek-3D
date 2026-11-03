@@ -46,6 +46,7 @@ it does not replace visual WebGPU inspection.
 | `refs/jelly-webgpu.html` | Earlier standalone WebGPU soft-body reference and solver target. | Reference only; not loaded by the app. |
 | `refs/hat_assets.html` | Exact procedural flower crown, baseball cap, and top hat source constructors used by the dressing table. | Reference/source input. |
 | `refs/jelly_baby.jpeg` | Reference image. | Reference only. |
+| `refs/walk-on-grass.wav` | Recorded walk on grass that the procedural Soccer run step is fitted to. | Reference only; not loaded by the app. |
 
 ## Model generation
 
@@ -219,7 +220,11 @@ distance/suspension filtering, six-voice limits, cached buffers, and cleanup. It
 also checks the tricycle rolling loop's deterministic bounded texture, silence at
 rest, speed-controlled start, parameter updates, buffer reuse and stop/restart
 cleanup, plus the separate speed-gated squeak layer and its paired source
-cleanup.
+cleanup. The spatial checks cover the distance curve and its normalization, softened
+left/right direction, rear head-shadow and air loss. Grass steps are checked for
+determinism, bounds, decay before the next run step and a crackle density near
+the reference recording, and run steps for audio-clock scheduling at the fixed
+cadence.
 
 ### Performance and architecture
 

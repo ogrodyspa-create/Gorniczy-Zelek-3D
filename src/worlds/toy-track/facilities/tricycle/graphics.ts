@@ -1,7 +1,23 @@
 import * as T from 'three/webgpu';
 import { batch, disposeParts, enamel, part, rod, rounded, tube } from '../../../../graphics/shared/toy-parts.ts';
-import { solidLoft, wheelFender, turned } from '../../../../graphics/shared/manufactured-geometry.ts';
+import { closedTube, solidLoft, wheelFender, turned } from '../../../../graphics/shared/manufactured-geometry.ts';
 import { DEFAULT_GRIPS, SEAT_HEIGHT, type GripFit } from './fit.ts';
+
+/** A closed section revolved about the local X axle. `profile` is [radial, axial],
+ * traced inner face → +axial → outer face → −axial (outward winding). */
+function axleRing(profile:number[][],segments:number) {
+  return solidLoft(Array.from({length:segments},(_,i)=>{const a=i*Math.PI*2/segments;return profile.map(([r,x])=>[x,r*Math.cos(a),r*Math.sin(a)]);}),true);
+}
+/** Rounded-rectangle (superellipse) section, traced clockwise from the inner face. */
+function roundedSection(center:number,halfRadial:number,halfAxial:number,exponent:number,steps=28,relief?:(radial:number,axial:number)=>number) {
+  return Array.from({length:steps},(_,i)=>{
+    const phi=Math.PI-i*Math.PI*2/steps,c=Math.cos(phi),s=Math.sin(phi);
+    const radial=center+halfRadial*Math.sign(c)*Math.abs(c)**(2/exponent),axial=halfAxial*Math.sign(s)*Math.abs(s)**(2/exponent);
+    return [radial-(relief?.(radial,axial)??0),axial];
+  });
+}
+/** Turned parts author along Y; wheels and pedals spin about X. */
+function alongX(mesh:T.Mesh) {mesh.rotation.z=Math.PI/2;return mesh;}
 
 /** Seat and front fork are equal crank arms on a visible parallel four-bar linkage. */
 export class Tricycle {
@@ -33,31 +49,50 @@ export class Tricycle {
       // End ferrules are proud of the grip sides; no applied stripes overlap its top.
       for(const end of [-1,1])rounded(this.seat,[.001,.0048,.0098],brass,grip.x+end*.006,y,grip.z,.0008);
       rod(frame,new T.Vector3(0,.029,-.005),new T.Vector3(side*.025,.012,.025),.0024,coral).name=`footrest-bracket-${side}`;
-      rounded(frame,[.012,.004,.022],ivory,side*.025,.012,.025,.002).name=`footrest-${side}`;
+      rounded(frame,[.013,.0036,.022],ivory,side*.025,.012,.025,.0016).name=`footrest-${side}`;
+      for(let rib=0;rib<4;rib++)rounded(frame,[.0105,.0009,.0022],teal,side*.025,.0139,.0175+rib*.005,.0004).name=`footrest-tread-${side}-${rib}`;
     }
     this.fork.position.set(0,0,.056);this.group.add(this.fork);
-    part(this.fork,new T.CylinderGeometry(.0045,.0045,.014,20),brass,0,.057,0).name='steering-spindle';
+    // Turned head tube: flared headset, waisted barrel, collar and domed cap.
+    part(this.fork,turned([[0,-.006],[.0056,-.006],[.0058,-.0050],[.0047,-.0038],[.0045,.0040],[.0055,.0052],[.0057,.0066],[.0052,.0080],[.0039,.0093],[.0021,.0100],[0,.0102]],32),brass,0,.057,0).name='steering-spindle';
     for(const side of [-1,1])tube(this.fork,[[0,.057,0],[side*.014,.047,0],[side*.014,.023,0]],.0026,coral).name=`fork-blade-${side}`;
+    // A molded crown ties both blades under the headset; the mudguard bolts to it.
+    rounded(this.fork,[.024,.0036,.0078],coral,0,.0505,0,.0015).name='fork-crown';
     rod(this.fork,new T.Vector3(-.019,.023,0),new T.Vector3(.019,.023,0),.002,brass).name='front-axle';
-    part(this.fork,wheelFender(.026,.015,.0014),ivory,0,.023,0).name='formed-front-mudguard';
-    for(const side of [-1,1])rod(this.fork,new T.Vector3(side*.014,.025,0),new T.Vector3(side*.006,.041,.020),.001,brass).name=`mudguard-stay-${side}`;
-    const wheel=(root:T.Group,x:number,y:number,z:number,r:number)=>{
+    part(this.fork,wheelFender(.0262,.011,.0012),ivory,0,.023,0).name='formed-front-mudguard';
+    // Rolled coral beads finish both mudguard edges.
+    for(const side of [-1,1]) {
+      const arc=Array.from({length:25},(_,i)=>{const a=-.18+(Math.PI+.36)*i/24;return new T.Vector3(side*.0055,.023+.0268*Math.sin(a),.0268*Math.cos(a));});
+      part(this.fork,closedTube(arc,.0007,8),coral).name=`mudguard-bead-${side}`;
+    }
+    for(const side of [-1,1])rod(this.fork,new T.Vector3(side*.014,.025,0),new T.Vector3(side*.0045,.041,.020),.001,brass).name=`mudguard-stay-${side}`;
+    const wheel=(root:T.Group,x:number,y:number,z:number,r:number,width:number)=>{
       const g=new T.Group();g.name=`wheel-${this.wheels.length}`;g.position.set(x,y,z);root.add(g);this.wheels.push(g);
-      const ring=part(g,new T.TorusGeometry(r-.003,.003,10,40),tire);ring.rotation.y=Math.PI/2;ring.name='rubber-tyre';
-      const hub=part(g,turned([[0,-.0025],[r-.007,-.0025],[r-.006,-.0015],[r-.006,.0015],[r-.007,.0025],[0,.0025]],40),teal);hub.rotation.z=Math.PI/2;hub.name='molded-wheel-hub';
+      // Balloon tyre: a crowned superellipse section with two shallow
+      // circumferential tread grooves, seated on a channelled rim.
+      const tyreDepth=Math.min(.0058,r*.36),rimRadius=r-tyreDepth,half=width/2;
+      const tread=(radial:number,axial:number)=>radial>r-.0012?.00045*Math.max(0,1-Math.abs(Math.abs(axial)-half*.36)/(half*.13)):0;
+      part(g,axleRing(roundedSection(r-tyreDepth/2,tyreDepth/2,half,2.6,36,tread),48),tire).name='rubber-tyre';
+      part(g,axleRing(roundedSection(rimRadius-.0004,.0012,half*.86,4,20),48),ivory).name='wheel-rim';
+      const disc=rimRadius-.0012;
+      alongX(part(g,turned([[0,-.0011],[disc-.0008,-.0011],[disc,-.0004],[disc,.0004],[disc-.0008,.0011],[0,.0011]],40),teal)).name='molded-wheel-hub';
+      alongX(part(g,turned([[0,-.0042],[.0026,-.0042],[.0034,-.0032],[.0034,.0032],[.0026,.0042],[0,.0042]],24),brass)).name='hub-barrel';
       for(const side of [-1,1]) {
-        const rim=part(g,new T.TorusGeometry(r-.007,.0007,8,40),ivory,side*.0027,0,0);rim.rotation.y=Math.PI/2;rim.name=`hub-trim-${side}`;
-        const cap=part(g,new T.SphereGeometry(.004,12,8),brass,side*.004,0,0);cap.scale.x=.4;cap.name=`axle-cap-${side}`;
-        for(let i=0;i<5;i++){const a=i*Math.PI*2/5;rod(g,new T.Vector3(side*.0032,Math.cos(a)*.0045,Math.sin(a)*.0045),new T.Vector3(side*.0032,Math.cos(a)*(r-.007),Math.sin(a)*(r-.007)),.0008,ivory).name=`raised-spoke-${side}-${i}`;}
+        // Domed axle nut on each outer face (turned +Y, then pointed outward).
+        const cap=part(g,turned([[0,.0042],[.0033,.0042],[.0031,.0048],[.0022,.0054],[0,.0057]],24),brass);cap.rotation.z=-side*Math.PI/2;cap.name=`axle-cap-${side}`;
+        for(let i=0;i<6;i++){const a=i*Math.PI/3+(side>0?Math.PI/6:0);rod(g,new T.Vector3(side*.0013,Math.cos(a)*.0036,Math.sin(a)*.0036),new T.Vector3(side*.0013,Math.cos(a)*(disc-.0006),Math.sin(a)*(disc-.0006)),.0008,ivory).name=`raised-spoke-${side}-${i}`;}
       }
       return g;
     };
-    wheel(this.fork,0,.023,0,.023);
-    for(const side of [-1,1])wheel(this.group,side*.036,.015,-.034,.015);
+    wheel(this.fork,0,.023,0,.023,.0068);
+    for(const side of [-1,1])wheel(this.group,side*.036,.015,-.034,.015,.0058);
     for(const side of [-1,1]) {
       const crank=new T.Group();crank.name=`pedal-crank-${side}`;crank.position.set(side*.019,.023,0);this.fork.add(crank);this.cranks.push(crank);
-      rod(crank,new T.Vector3(),new T.Vector3(0,side*.010,0),.0015,brass);
-      rounded(crank,[.009,.004,.007],coral,side*.004,side*.010,0,.001);
+      rod(crank,new T.Vector3(),new T.Vector3(0,side*.010,0),.0015,brass).name=`crank-arm-${side}`;
+      rod(crank,new T.Vector3(0,side*.010,0),new T.Vector3(side*.0072,side*.010,0),.0008,brass).name=`pedal-spindle-${side}`;
+      rounded(crank,[.0080,.0034,.0070],coral,side*.0048,side*.010,0,.0013).name=`pedal-block-${side}`;
+      // Rubber tread bars on both faces: the pedal is visible from above at every crank angle.
+      for(const face of [-1,1])for(let bar=0;bar<3;bar++)rounded(crank,[.0068,.0007,.0011],ivory,side*.0048,side*.010+face*.0017,-.0022+bar*.0022,.0003).name=`pedal-tread-${side}-${face}-${bar}`;
       rod(this.seat,new T.Vector3(0,-.009,0),new T.Vector3(side*.018,-.009,0),.0015,brass).name=`seat-steering-crank-${side}`;
       rod(this.fork,new T.Vector3(0,.054,0),new T.Vector3(side*.018,.054,0),.0015,brass).name=`fork-steering-crank-${side}`;
       part(this.seat,new T.SphereGeometry(.0022,12,8),brass,side*.018,-.009,0).name=`seat-link-bearing-${side}`;

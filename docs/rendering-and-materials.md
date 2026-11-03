@@ -44,6 +44,30 @@ changes; unchanged receiver instances do not trigger a storage-buffer upload. Th
 a CPU/GC optimization only and does not change ray count, atlas resolution, filtering,
 or receiver selection.
 
+## Floor contact shading
+
+The tabletop is a clearcoated, glossy receiver. Its reflection of the bright
+window and room is view-dependent, and nothing used to occlude it under
+furniture or at contacts, so the sheen shone through facility shadows right up
+to every foot, base and curb. As the camera moved the sheen slid across those
+contacts and objects appeared to lose and regain their feet. The ground
+receiver now also returns a specular occlusion built from the same window
+shadow, jelly contact and facility contact masks that darken its albedo; it
+scales the clearcoat, the base specular F0 (through the IOR, because the pinned
+Three ignores `specularIntensityNode`) and F90 (in the specular setup, so the
+grazing-angle sheen is occluded too). Open floor is unchanged.
+
+Objects rest directly on the tabletop, and the tabletop never writes depth: it
+is drawn first (render order −1) with `depthWrite` off. No world places anything
+below it and the orbit never goes under it, so it never legitimately occludes
+anything. While it wrote depth, every foot, base and curb competed with it over
+a near-tangent band only micrometres apart, and while moving that whole band
+won or lost for single frames at every contact at once. Polygon offsets and a
+global reversed depth buffer were tried and rejected; the latter broke the
+jelly's face compositing over the transmissive body. Keep depth and shading
+fixes local to the receiving surface. Anything ever placed below the tabletop
+would show through it.
+
 ## Drawing-buffer and camera sizing
 
 [`resizeView`](../src/graphics/scene/renderer.ts) is called after startup and through a

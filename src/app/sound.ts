@@ -1,4 +1,5 @@
 import type { PerspectiveCamera } from 'three/webgpu';
+import { SpatialAudio, type SpatialEmitter } from './spatial-audio.ts';
 import { FacilityAudio, type FacilitySoundEvent } from '../facilities/sound.ts';
 import { TricycleRollAudio } from '../worlds/toy-track/facilities/tricycle/sound.ts';
 import { SoccerAudio, type GrassContactType } from '../worlds/soccer/sound.ts';
@@ -14,7 +15,9 @@ export class JellySound {
   private facilities:FacilityAudio|null=null;
   private tricycleRoll:TricycleRollAudio|null=null;
   private soccer:SoccerAudio|null=null;
-  private listener={x:0,y:.12,z:.19,rightX:1,rightZ:0};
+  private spatial:SpatialAudio|null=null;
+  /** The jelly's own contacts and footsteps; previously unattenuated, so unit gain at the default orbit. */
+  private body:SpatialEmitter|null=null;
   private abort=new AbortController();
   muted=false;
   constructor() {
@@ -36,9 +39,13 @@ export class JellySound {
       compressor.threshold.value=-14;compressor.ratio.value=5;
       master.connect(compressor).connect(context.destination);
       this.context=context;this.master=master;this.compressor=compressor;
-      this.facilities=new FacilityAudio(context,master);
-      this.tricycleRoll=new TricycleRollAudio(context,master);
-      this.soccer=new SoccerAudio(context,master);
+      const spatial=new SpatialAudio(context,master);this.spatial=spatial;
+      this.body=spatial.emitter({reference:.35,normalizeAt:.3,maxGain:1.5});
+      this.facilities=new FacilityAudio(context,spatial);
+      this.tricycleRoll=new TricycleRollAudio(context,spatial);
+      this.soccer=new SoccerAudio(context,spatial,this.body);
+      // Unlocked while already on the pitch: prepare now, not on the first step.
+      if(this.world==='soccer')this.soccer.prepare();
       return context;
     } catch {
       if(context&&context.state!=='closed')void context.close().catch(()=>{});
@@ -68,11 +75,15 @@ export class JellySound {
     if(this.context&&this.master) this.master.gain.setTargetAtTime(this.muted?0:.62,this.context.currentTime,.025);
     return this.muted;
   }
-  listen(camera:PerspectiveCamera) {
-    const {x,y,z}=camera.position,e=camera.matrixWorld.elements,l=this.listener;
-    l.x=x;l.y=y;l.z=z;l.rightX=e[0];l.rightZ=e[2];
+  /** Once per rendered frame, after moving sources have reported their positions. */
+  listen(camera:PerspectiveCamera,body:{x:number;y:number;z:number}) {
+    // Contacts and footsteps originate where the jelly meets its support.
+    this.body?.set(body.x,Math.max(0,body.y-.025),body.z);
+    this.spatial?.listen(camera);
   }
+  private world:'home'|'toys'|'soccer'='home';
   prepareWorld(world:'home'|'toys'|'soccer') {
+    this.world=world;
     // Audio contexts only exist after a user gesture. Destination loading happens
     // after that gesture, so generate procedural beds while the loading card is up
     // instead of on the first moving frame in the new world.
@@ -81,29 +92,27 @@ export class JellySound {
   }
   facility=(event:FacilitySoundEvent)=>{
     if(this.muted||document.hidden)return;
-    const l=this.listener,dx=event.x-l.x,dy=event.y-l.y,dz=event.z-l.z,distance=Math.hypot(dx,dy,dz);
-    this.facilities?.play(event,distance,(dx*l.rightX+dz*l.rightZ)/Math.max(.12,distance));
+    this.facilities?.play(event);
   };
   stopFacilities() {this.facilities?.stop();this.tricycleRoll?.stop();this.soccer?.stop();}
   soccerMotion(speed:number) {
     if(this.muted||document.hidden)return;this.soccer?.motion(speed);
   }
-  soccerGrassContact(type:Exclude<GrassContactType,'step'>) {
+  soccerGrassContact(type:GrassContactType) {
     if(this.muted||document.hidden)return;
     this.soccer?.grassJump(type);
   }
   soccerEvent(kind:SoccerEvent,strength:number,p:{x:number;y:number;z:number}) {
-    if(this.muted||document.hidden)return;const l=this.listener,dx=p.x-l.x,dz=p.z-l.z,distance=Math.hypot(dx,p.y-l.y,dz);
-    this.soccer?.play(kind,strength,distance,Math.max(-.7,Math.min(.7,(dx*l.rightX+dz*l.rightZ)/Math.max(.12,distance))));
+    if(this.muted||document.hidden)return;this.soccer?.play(kind,strength,p);
   }
   tricycleMotion(speed:number,x:number,y:number,z:number) {
     if(this.muted||document.hidden)return;
-    const l=this.listener,dx=x-l.x,dy=y-l.y,dz=z-l.z,distance=Math.hypot(dx,dy,dz);
-    this.tricycleRoll?.update(speed,distance,(dx*l.rightX+dz*l.rightZ)/Math.max(.12,distance));
+    this.tricycleRoll?.update(speed,x,y,z);
   }
   contact(speed:number,foot:boolean) {
-    const ctx=this.context, out=this.master;
-    if(!ctx||!out||ctx.state==='closed'||this.muted) return;
+    const ctx=this.context, body=this.body, out=body?.input;
+    if(!ctx||!body||!out||ctx.state==='closed'||this.muted) return;
+    this.spatial?.place(body,body.position.x,body.position.y,body.position.z);
     const t=ctx.currentTime, landing=!foot, strength=Math.min(1,speed/(landing?.62:.8)),impactBoost=landing?1.45:1;
     // Damped wet membrane modes, plus a brief filtered surface-contact transient.
     const base=(foot?190:125)+Math.random()*18;
@@ -126,7 +135,7 @@ export class JellySound {
   }
   dispose() {
     this.facilities?.dispose();this.facilities=null;this.tricycleRoll?.dispose();this.tricycleRoll=null;
-    this.soccer?.dispose();this.soccer=null;
+    this.soccer?.dispose();this.soccer=null;this.spatial?.dispose();this.spatial=null;this.body=null;
     this.abort.abort();this.master?.disconnect();this.compressor?.disconnect();
     const context=this.context;this.context=null;this.master=null;this.compressor=null;this.resumePromise=null;
     if(context&&context.state!=='closed')void context.close().catch(()=>{});

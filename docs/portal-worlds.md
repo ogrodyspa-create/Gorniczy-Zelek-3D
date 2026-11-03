@@ -69,13 +69,15 @@ ground target grows with the twofold road/scenery footprint to preserve the main
 world's shadow texel density, while returning to the playroom restores its
 original target size and fit.
 
-The portal is a stationary molded toy device: a deep cream aperture shell, a
-recessed seal and proud brass bezel on each face, three fixed pastel energy
-cartridges whose swept ends seat into the shell chamfer, and mirrored weighted
-plinths with rubber undertrays and vented power pods. The plinths and undertrays use
-separate vertical and depth datums so their visible seam stays stable above the
-tabletop; the undertray bottom is 1.5 mm clear of the floor. Both faces have a
-destination dial and small status windows because travel works from either side.
+The portal is a stationary molded toy device: a deep cream porthole shell with
+rolled inner and outer edges and a shallow channel on each face, a gasket lining
+the aperture mouth and a brass bezel bead keyed into the inner lip, a ring of
+molded rivets, and three fixed pastel energy cartridges whose swept ends enter
+the face through turned brass socket bosses. It stands on one rectangular sled:
+the mirrored face bars carry the ring, and the two end pods pass beneath the
+ring's flanks to tie both bars together. Four rubber buns are the only floor
+contact and rest on the tabletop. Both faces have a tilted console with a
+destination dial and status windows, because travel works from either side.
 PBR enamel, satin metal and matte rubber separate the manufactured surfaces.
 Only the opaque, double-sided TSL membrane animates; hardware stays fixed.
 Static parts batch by finish, with no scene capture, particles or extra lights.
@@ -87,7 +89,7 @@ The geometry verification keeps the named assembly audit before batching and
 checks the emitted batched surfaces again for z-fighting and topology defects.
 The housing is also a static facility collision assembly: a segmented annulus
 keeps the membrane opening clear, while the shell depth, cartridge rails,
-control panels, mirrored plinths, undertrays and power pods keep the jelly on
+consoles, face bars, end pods and feet keep the jelly on
 the solid toy hardware. Home and toy portals register their own boxes with the
 active world manager and warm the same authored set before travel begins.
 

@@ -1,3 +1,5 @@
+import type { SpatialAudio, SpatialEmitter } from '../app/spatial-audio.ts';
+
 export type FacilitySoundKind='swing-creak'|'swing-air'|'trampoline-land'|'trampoline-spring';
 export type FacilitySoundEvent={kind:FacilitySoundKind;strength:number;x:number;y:number;z:number};
 export type FacilitySoundSink=(event:FacilitySoundEvent)=>void;
@@ -101,17 +103,28 @@ export function makeFacilitySample(kind:FacilitySoundKind,variant:number,sampleR
   return samples;
 }
 
+/** Beyond this camera distance a facility is inaudible and its voice is not started. */
+const FACILITY_AUDIBLE_DISTANCE=.9;
+
 export class FacilityAudio {
   private readonly buffers=new Map<string,AudioBuffer>();
   private readonly voices=new Set<AudioBufferSourceNode>();
   private readonly lastPlayed=new Map<FacilitySoundKind,number>();
+  /** One spatial origin per facility (swing, trampoline), shared by its voices. */
+  private readonly emitters=new Map<string,SpatialEmitter>();
   private variant=0;
   readonly context:AudioContext;
-  readonly output:AudioNode;
-  constructor(context:AudioContext,output:AudioNode) {this.context=context;this.output=output;}
-  play(event:FacilitySoundEvent,distance:number,pan:number) {
+  readonly spatial:SpatialAudio;
+  constructor(context:AudioContext,spatial:SpatialAudio) {this.context=context;this.spatial=spatial;}
+  private emitter(kind:FacilitySoundKind) {
+    const key=kind.slice(0,kind.indexOf('-'));
+    let emitter=this.emitters.get(key);
+    if(!emitter){emitter=this.spatial.emitter({reference:.35});this.emitters.set(key,emitter);}
+    return emitter;
+  }
+  play(event:FacilitySoundEvent) {
     const ctx=this.context;
-    if(ctx.state!=='running'||distance>.9||this.voices.size>=6)return;
+    if(ctx.state!=='running'||this.voices.size>=6||this.spatial.distanceTo(event.x,event.y,event.z)>FACILITY_AUDIBLE_DISTANCE)return;
     const now=ctx.currentTime;
     // Catch-up substeps can cross several events at one audio-clock instant.
     if(now-(this.lastPlayed.get(event.kind)??-1)<.10)return;
@@ -122,13 +135,13 @@ export class FacilityAudio {
       const data=makeFacilitySample(event.kind,(this.variant-1)%3,ctx.sampleRate);
       buffer=ctx.createBuffer(1,data.length,ctx.sampleRate);buffer.copyToChannel(data,0);this.buffers.set(key,buffer);
     }
-    const source=ctx.createBufferSource(),gain=ctx.createGain(),panner=ctx.createStereoPanner();
+    const source=ctx.createBufferSource(),gain=ctx.createGain(),emitter=this.emitter(event.kind);
     source.buffer=buffer;
     const level=event.kind==='trampoline-land'?.38:event.kind==='swing-creak'?.28:.22;
-    gain.gain.value=level*Math.max(0,Math.min(1,event.strength))/(1+(distance/.35)**2);
-    panner.pan.value=Math.max(-.7,Math.min(.7,pan));
-    source.connect(gain).connect(panner).connect(this.output);this.voices.add(source);
-    source.onended=()=>{this.voices.delete(source);source.disconnect();gain.disconnect();panner.disconnect();};
+    gain.gain.value=level*Math.max(0,Math.min(1,event.strength));
+    this.spatial.place(emitter,event.x,event.y,event.z);
+    source.connect(gain).connect(emitter.input);this.voices.add(source);
+    source.onended=()=>{this.voices.delete(source);source.disconnect();gain.disconnect();};
     source.start(now);
   }
   stop() {

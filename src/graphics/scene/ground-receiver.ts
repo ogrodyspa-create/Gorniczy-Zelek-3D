@@ -39,6 +39,11 @@ export function groundReceiver(albedo:Node<'vec3'>,optics:RefractiveLightField,f
   const visibility=float(1).sub(shadow).mul(facilityVisibility);
   return {
     color:albedo.mul(float(1).sub(float(1).sub(visibility).mul(fraction))).mul(float(1).sub(contact.mul(.40))).mul(float(1).sub(facilityContact.mul(.35))),
+    // The glossy floor reflects the bright window/room. Under furniture and at
+    // every foot, base and curb that reflection is blocked by the object above
+    // it; without this the view-dependent sheen shone through shadows up to
+    // each contact and flickered there as the camera moved.
+    specularOcclusion:float(1).sub(float(1).sub(visibility).mul(.85)).mul(float(1).sub(contact.mul(.7))).mul(float(1).sub(facilityContact.mul(.8))),
     visibility:facilityVisibility,facilityMask,
   };
 }
