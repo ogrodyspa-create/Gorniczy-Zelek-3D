@@ -1,0 +1,68 @@
+
+name: Publikacja Gorniczego Zelka 3D
+
+on:
+  workflow_dispatch:
+    inputs:
+      approval:
+        description: "Wpisz PUBLIKUJ-STABLE"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: ${{ inputs.approval == 'PUBLIKUJ-STABLE' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Pobierz stabilna wersje
+        uses: actions/checkout@v4
+        with:
+          ref: v1.0.0-bez-drona
+          persist-credentials: false
+
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Zainstaluj zaleznosci
+        run: npm ci
+
+      - name: Sprawdz kod
+        run: npm run lint
+
+      - name: Sprawdz TypeScript
+        run: npm run typecheck
+
+      - name: Zbuduj aplikacje
+        run: npm run build:pages
+
+      - name: Konfiguruj GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Przygotuj pliki publikacji
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Opublikuj aplikacje
+        id: deployment
+        uses: actions/deploy-pages@v4
