@@ -1,3 +1,4 @@
+import { ZAGLEBIE, stadiumBranding, disposeBrandingTextures } from './branding.ts';
 import * as T from 'three/webgpu';
 import type Node from 'three/src/nodes/core/Node.js';
 import { float, max, mix, positionLocal, smoothstep, vec3 } from 'three/tsl';
@@ -25,7 +26,7 @@ export class SoccerStadium {
   constructor(keepParts=false,grass=createFallbackGrassTextures()) {
     this.grass=grass;
     this.group.name='soccer-stadium';this.staticParts.name='stadium-parts';this.staticParts.userData.keepParts=keepParts;this.group.add(this.staticParts);
-    const cream=enamel(0xf5e6c5,.33),blue=enamel(0x23559c,.29),seatBlue=enamel(0x4688c8,.4),gold=enamel(0xeabf57,.34),coral=enamel(0xdb6755),net=enamel(0xe9e2cd,.7);
+    const cream=enamel(ZAGLEBIE.white,.48),blue=enamel(ZAGLEBIE.green,.42),seatBlue=enamel(ZAGLEBIE.orange,.48),gold=enamel(ZAGLEBIE.copper,.34),coral=enamel(ZAGLEBIE.orange,.4),net=enamel(0xffffff,.78);
     // Every molded seat is the same manufactured shell. Share the authored
     // geometry and vary only the mesh transform/material; rebuilding the bevel,
     // cleanup and smoothing pipeline hundreds of times adds seconds to the
@@ -51,7 +52,7 @@ export class SoccerStadium {
         for(let seat=0;seat<36;seat++) {
           if(seat%10===0)continue; // Four clear aisle lanes.
           const x=side*(inner+.034),z=-1.52+seat*.087;
-          const shell=part(this.staticParts,seatShell,row%2?blue:seatBlue,x,y-.003,z);shell.rotation.y=side*Math.PI/2;shell.name=`side-seat-${side}-${row}-${seat}`;
+          const shell=part(this.staticParts,seatShell,[seatBlue,blue,cream][Math.floor(seat/9)%3],x,y-.003,z);shell.rotation.y=side*Math.PI/2;shell.name=`side-seat-${side}-${row}-${seat}`;
           this.seatCollision(x,y-.003,z,shell.rotation.y);
         }
         for(let aisle=0;aisle<4;aisle++)addBox(`side-step-${side}-${row}-${aisle}`,[.061,.004,.032],side*(inner+.036),y+.002,-1.52+aisle*.87,gold,.001);
@@ -79,7 +80,7 @@ export class SoccerStadium {
           const count=Math.floor(bank.width/.087);
           for(let seat=0;seat<count;seat++) {
             if(seat%8===0)continue;
-            const shell=part(this.staticParts,seatShell,row%2?seatBlue:blue,bank.x-bank.width/2+.045+seat*.087,y-.001,z);
+            const shell=part(this.staticParts,seatShell,[seatBlue,cream,blue][Math.floor(seat/6)%3],bank.x-bank.width/2+.045+seat*.087,y-.001,z);
             shell.rotation.y=end===-1?Math.PI:0;shell.name=`end-seat-${end}-${section}-${row}-${bankIndex}-${seat}`;
             this.seatCollision(shell.position.x,shell.position.y,shell.position.z,shell.rotation.y);
           }
@@ -110,6 +111,7 @@ export class SoccerStadium {
     this.setScore(0);
     stadiumDetails(this.staticParts,this.boxes,cream,blue,gold,coral);
     batch(this.staticParts);
+    stadiumBranding(this.group);
   }
   private seatGeometry() {
     // One formed L shell, 3 mm thick, with a curved knee instead of intersecting boxes.
@@ -155,7 +157,7 @@ export class SoccerStadium {
       part(this.staticParts,closedTube([new T.Vector3(-w,height,z+end*.007),new T.Vector3(-w,height,rear),new T.Vector3(w,height,rear),new T.Vector3(w,height,z+end*.007)],.0007,6),material).name=`net-cross-${end}-${i}`;
     }
   }
-  dispose(){disposeParts(this.group);disposeGrassTextures(this.grass);}
+  dispose(){disposeBrandingTextures(this.group);disposeParts(this.group);disposeGrassTextures(this.grass);}
 }
 
 export function soccerBallGeometry() {return new T.SphereGeometry(.021,40,28);}

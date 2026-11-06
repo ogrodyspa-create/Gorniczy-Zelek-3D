@@ -126,7 +126,7 @@ DPR, user agent, and the error message; it also offers a full-page retry.
 ## Camera and viewport policy
 
 `OrbitControls` orbits around the mass center, cannot pan, damps rotation, and
-keeps the distance in the range `.135`–`.42` metres during ordinary play. A
+keeps the distance in the range `.135`–`.65` metres during ordinary play. A
 grab freezes both orbit and body-follow movement. Facilities can raise the
 minimum camera distance while active.
 
@@ -140,8 +140,7 @@ one animation frame. It uses the project-wide drawing-buffer policy:
 - transient zero-sized viewports ignored.
 
 The camera uses a narrow tabletop framing, an adjusted field of view, a small
-vertical view offset on mobile, and a polar-angle limit that keeps the horizon
-out of frame. Soccer adds a world-owned wall ray test after orbit control
+vertical view offset on mobile, and a polar-angle limit that permits the workshop walls and upper signage to enter the frame. Soccer adds a world-owned wall ray test after orbit control
 updates; it constrains the camera radius only when a field boundary would sit
 between the jelly and the camera, then releases back to the saved orbit radius.
 

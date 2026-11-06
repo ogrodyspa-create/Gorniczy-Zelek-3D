@@ -63,14 +63,14 @@ export function turfMaterial(grass:GrassTextureSet) {
   const sourceNormal=normalMap(texture(grass.normal,uv),vec2(.42,-.42)) as unknown as Node<'vec3'>;
   const heightNormal=bumpMap(sourceDisplacement,float(.0009)) as unknown as Node<'vec3'>;
   const displacement=sourceDisplacement.sub(.5).mul(.0018);
-  const stripe=sin(p.z.mul(Math.PI/.22)).mul(.019);
+  const stripe=sin(p.z.mul(Math.PI/.22)).mul(.065);
   const edge=max(abs(p.x).sub(.992),abs(p.z).sub(1.532));
   const center=abs(p.xz.length().sub(.255)),halfway=abs(p.z);
   const boxX=abs(abs(p.x).sub(.40)),boxZ=abs(abs(p.z).sub(1.19));
   const penalty=abs(p.x).lessThan(.40).and(boxZ.lessThan(.003)).or(abs(p.z).greaterThan(1.19).and(boxX.lessThan(.003)));
   const paint=float(edge.greaterThan(0).or(center.lessThan(.0035)).or(halfway.lessThan(.0035)).or(penalty));
   const green=base.mul(float(1).add(stripe));
-  material.colorNode=mix(green,vec3(.86,.88,.68),paint);
+  material.colorNode=mix(green,vec3(.97,.98,.95),paint);
   // The asset is an authored PBR roughness map (white = rough). Use it as-is.
   // At this metre-scale the unresolved grass fibres scatter most coherent
   // environment reflection, so keep the default dielectric lobe restrained

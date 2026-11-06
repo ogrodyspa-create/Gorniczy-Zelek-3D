@@ -4,7 +4,7 @@ import { PHYS } from '../../../../physics/constants.js';
 
 /** The dressing table's world-space footprint, in metres. */
 export const WEARABLE_TABLE={
-  x:-.155,z:.305,width:.20,depth:.112,height:.061,top:.061,
+  x:-.29,z:.16,width:.20,depth:.112,height:.061,top:.061,
   slotSpacing:.063,interactionRadius:.135,collisionRadius:.23,
 };
 
@@ -14,9 +14,9 @@ export const WEARABLE_TABLE={
  * their crowns, brims, and rings all fit the same 7 cm jelly head.
  */
 export const HEAD_WEARABLES=[
-  {id:'floral-crown',label:'Floral Crown',slotX:-WEARABLE_TABLE.slotSpacing,scale:.016,tableLift:.0016,headLift:-.0022,headForward:0,headSide:0,rotationY:0},
-  {id:'top-hat',label:'Top Hat',slotX:0,scale:.0144,tableLift:.0008,headLift:-.0003,headForward:0,headSide:0,rotationY:0},
-  {id:'baseball-cap',label:'Baseball Cap',slotX:WEARABLE_TABLE.slotSpacing,scale:.0125,tableLift:.006,headLift:.0038,headForward:-.0042,headSide:0,rotationY:0},
+  {id:'czako',label:'Czako górnicze',slotX:-WEARABLE_TABLE.slotSpacing,scale:.016,tableLift:.001,headLift:-.001,headForward:0,headSide:0,rotationY:0},
+  {id:'mining-helmet',label:'Kask z lampą',slotX:0,scale:.017,tableLift:.001,headLift:-.001,headForward:0,headSide:0,rotationY:0},
+  {id:'welding-mask',label:'Przyłbica spawalnicza',slotX:WEARABLE_TABLE.slotSpacing,scale:.016,tableLift:.008,headLift:-.003,headForward:0,headSide:0,rotationY:0},
 ] as const;
 
 export type HeadWearableIndex=0|1|2;

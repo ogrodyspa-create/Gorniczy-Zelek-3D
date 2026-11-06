@@ -24,7 +24,7 @@ export class SoccerLighting {
     const material=turf.material as MeshPhysicalNodeMaterial,albedo=material.colorNode as Node<'vec3'>;
     turf.userData.groundReceiver=true;turf.receiveCaustics=true;
     caustics.registerGround(turf,albedo,field,fraction,FIELD.y);
-    this.optics=new RefractiveLightField(body.cage.opticalSurface,direction,JELLY_FLAVORS.blueberry.absorption);
+    this.optics=new RefractiveLightField(body.cage.opticalSurface,direction,JELLY_FLAVORS.crystal.absorption);
     this.transport=new OpticalTransport(this.optics,body,camera,direction,fail,cameraOnlyOpticalHz);
     this.receivers=caustics.addSource(this.optics);this.receivers.enabledNode.value=0;
   }

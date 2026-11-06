@@ -10,12 +10,12 @@ export class Trampoline {
   private lastCompression=NaN;
   constructor() {
     this.group.position.set(TRAMPOLINE.x,0,TRAMPOLINE.z);
-    const pad=new THREE.MeshPhysicalNodeMaterial({color:'#a3ae7c',roughness:.72,clearcoat:.06});
-    const fabric=new THREE.MeshStandardNodeMaterial({color:'#465144',roughness:.94,side:THREE.DoubleSide});
-    const metal=new THREE.MeshStandardNodeMaterial({color:'#c0b394',metalness:.75,roughness:.32});
-    const rubber=new THREE.MeshStandardNodeMaterial({color:'#687157',roughness:.85});
+    const pad=new THREE.MeshPhysicalNodeMaterial({color:'#9d603e',roughness:.72,clearcoat:.06});
+    const fabric=new THREE.MeshStandardNodeMaterial({color:'#243735',roughness:.94,side:THREE.DoubleSide});
+    const metal=new THREE.MeshStandardNodeMaterial({color:'#889b98',metalness:.75,roughness:.32});
+    const rubber=new THREE.MeshStandardNodeMaterial({color:'#243330',roughness:.85});
     const thread=new THREE.MeshStandardNodeMaterial({color:'#e1d5b0',roughness:.9});
-    const seam=new THREE.MeshStandardNodeMaterial({color:'#869368',roughness:.95});
+    const seam=new THREE.MeshStandardNodeMaterial({color:'#715036',roughness:.95});
     const legFinish=new THREE.MeshStandardNodeMaterial({color:'#b5ad91',metalness:.55,roughness:.46});
     const ring=(radius:number,tube:number,y:number,material:THREE.Material,arc=Math.PI*2,start=0)=>{
       const mesh=new THREE.Mesh(new THREE.TorusGeometry(radius,tube,10,64,arc),material);

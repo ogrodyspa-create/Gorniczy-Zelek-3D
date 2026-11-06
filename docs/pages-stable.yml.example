@@ -1,0 +1,49 @@
+# INACTIVE TEMPLATE. Not installed in .github/workflows; does not publish anything.
+name: Publish approved stable version
+on:
+  workflow_dispatch:
+    inputs:
+      approval:
+        description: 'After owner approval type PUBLIKUJ-STABLE'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: pages-stable
+  cancel-in-progress: false
+jobs:
+  build:
+    if: inputs.approval == 'PUBLIKUJ-STABLE'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: stable-bez-drona
+          fetch-depth: 0
+      - name: Verify frozen release
+        run: test "$(git rev-parse HEAD)" = "$(git rev-parse 'v1.0.0-bez-drona^{commit}')"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build:pages
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy approved artifact
+        id: deployment
+        uses: actions/deploy-pages@v4

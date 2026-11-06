@@ -70,8 +70,8 @@ export class Input {
     const c=this.controls;
     c.target.copy(body.center);this.follow.copy(c.target);
     c.enablePan=false;c.enableDamping=true;c.dampingFactor=.07;
-    c.minDistance=.135;c.maxDistance=.42;c.minPolarAngle=.22;c.maxPolarAngle=1.10;
-    c.rotateSpeed=.65;c.zoomSpeed=.65;c.update();
+    c.minDistance=.135;c.maxDistance=.65;c.minPolarAngle=.22;c.maxPolarAngle=1.42;
+    c.rotateSpeed=.65;c.zoomSpeed=.65;c.update();camera.updateMatrixWorld();
     const signal=this.abort.signal;
     canvas.addEventListener('pointerdown',this.begin,{capture:true,signal});
     canvas.addEventListener('pointermove',this.pointerMove,{capture:true,passive:false,signal});
@@ -288,16 +288,16 @@ export class Input {
   }
   update(dt:number) {
     const soccer=this.soccerOnField();
-    this.controls.maxDistance=.42;
+    this.controls.maxDistance=.65;
     this.soccerCamera.setFieldState(this.camera,soccer);
-    this.controls.maxPolarAngle=this.soccerCamera.needsWidePolarLimit?1.46:Math.PI/2-THREE.MathUtils.degToRad(this.camera.fov)/2-.10;
+    this.controls.maxPolarAngle=this.soccerCamera.needsWidePolarLimit?1.46:1.42;
     const riding=this.ridingVehicle(),mode=soccer?'soccer':riding?'vehicle':'walk';
     if(mode!==this.hintMode) {
       this.hintMode=mode;
-      if(this.hintLabels[0])this.hintLabels[0].textContent=soccer?'run':riding?'pedal · steer':'wander';
-      if(this.hintLabels[1])this.hintLabels[1].textContent='hop';
+      if(this.hintLabels[0])this.hintLabels[0].textContent=soccer?'bieg':riding?'jedź · skręcaj':'ruch';
+      if(this.hintLabels[1])this.hintLabels[1].textContent='skok';
       this.joystickElement?.setAttribute('aria-label',riding?'Steer and pedal':'Move');
-      const jump=this.jumpElement;if(jump){jump.disabled=riding;jump.style.opacity=riding?'.3':'';jump.setAttribute('aria-label','Jump');const caption=jump.querySelector('span');if(caption)caption.textContent='hop';}
+      const jump=this.jumpElement;if(jump){jump.disabled=riding;jump.style.opacity=riding?'.3':'';jump.setAttribute('aria-label','Jump');const caption=jump.querySelector('span');if(caption)caption.textContent='skok';}
     }
     this.controls.minDistance=this.facilityCameraDistance()??.135;
     // External resets must never leave pointer capture or orbit state wedged.

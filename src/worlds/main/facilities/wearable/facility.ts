@@ -2,7 +2,7 @@ import { Box3, Quaternion, Vector3, type Group, type Scene } from 'three/webgpu'
 import type { FacilityShadows } from '../../../../facilities/shadows.ts';
 import type { SoftBody } from '../../../../physics/soft-body.js';
 import { FacilityCollision } from '../../../../facilities/collision.ts';
-import { HEAD_WEARABLES, WearablePhysics } from './physics.ts';
+import { HEAD_WEARABLES, WearablePhysics, type HeadWearableIndex } from './physics.ts';
 import { WearableTable } from './graphics.ts';
 import type { Facility } from '../../../../facilities/manager.ts';
 import type { Locomotion } from '../../../../app/locomotion.ts';
@@ -26,7 +26,7 @@ export class WearableFacility implements Facility {
     // The table's wearables can travel with the baby across the play area. The
     // broad, fixed envelope keeps both ground and raised-surface shadow maps
     // valid while the item is worn, including its short local head detachment.
-    shadows.add(this.visual.group,new Box3(new Vector3(-.32,0,-.28),new Vector3(.32,.18,.46)));
+    shadows.add(this.visual.group,new Box3(new Vector3(-.48,-.0001,-.38),new Vector3(.48,.23,.53)));
   }
 
   get active() {return false;}
@@ -70,6 +70,14 @@ export class WearableFacility implements Facility {
   }
 
   step(h:number) {this.physics.step(h);}
+
+  /** Explicit equipment panel shares the same attachment and jump state. */
+  selectEquipment(index:HeadWearableIndex|null) {
+    if(this.physics.body.grab)return false;
+    const old=this.physics.returnToTable();if(old!==-1)this.visual.setOnTable(old);
+    if(index!==null){this.physics.wornIndex=index;this.visual.setWorn(index,this.babyGroup);this.update();}
+    return true;
+  }
 
   afterStep() {
     this.collision.resolveBoxes(this.visual.collisionBoxes);

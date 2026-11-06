@@ -1,4 +1,4 @@
-export const DESTINATIONS=[{id:'home',label:'Home'},{id:'toys',label:'Play Tricycle'},{id:'soccer',label:'Play Soccer'}] as const;
+export const DESTINATIONS=[{id:'home',label:'Home'},{id:'toys',label:'Play Tricycle'},{id:'soccer',label:'ZAGŁĘBIE LUBIN'}] as const;
 export type WorldId=typeof DESTINATIONS[number]['id'];
 
 /** A modal input boundary: arrow navigation never leaks into locomotion. */

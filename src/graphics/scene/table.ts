@@ -25,8 +25,8 @@ export async function loadTableTextures(mobile=false):Promise<TableTextures> {
 export function makeTable(_optics:RefractiveLightField,light:{color:THREE.Color;windowFraction:number;irradiance:number},facilities:FacilityShadows,caustics:CausticReceivers,textures:TableTextures) {
   const fraction=uniform(light.windowFraction);
   const {base,normal,roughness}=textures;
-  const uv=positionWorld.xz.div(2.5).add(.5);
-  const albedo=texture(base,uv).rgb;
+  const uv=positionWorld.xz.div(.65).add(.5);
+  const albedo=texture(base,uv).rgb.mul(vec2(.58,.58).x);
   const material=new THREE.MeshPhysicalNodeMaterial({metalness:0,roughness:.26,clearcoat:.38,clearcoatRoughness:.23});
   // Plane UV-v points toward -Z; the metre-scaled world UV points toward +Z.
   material.normalNode=normalMap(texture(normal,uv),vec2(.27,-.27));

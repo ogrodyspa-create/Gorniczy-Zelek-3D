@@ -80,3 +80,7 @@ See [soccer physics](soccer-physics.md) and
 The static stadium collision grid uses nested numeric X/Z maps and reusable candidate/seen
 storage. The 240 Hz nearby-box query creates no string cell keys; this does not change
 which collision boxes reach the narrow phase.
+
+## ZAGŁĘBIE LUBIN presentation (V2)
+
+Soccer now appears as ZAGŁĘBIE LUBIN in the destination menu. Orange, green and white seat sectors, shared wordmark boards, actual floodlights and an optional cosmetic supporter headband are owned by this world. No club crest is used. Geometry/collision placement, ball/keeper mechanics and camera behavior are retained. The goalkeeper uses the crystal flavour inherited from the mining edition. See [Zagłębie Lubin implementation](zaglebie-lubin.md) for scope and verification.

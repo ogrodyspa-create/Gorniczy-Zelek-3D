@@ -1,12 +1,12 @@
-import { DEFAULT_JELLY_FLAVOR, JELLY_FLAVORS, type JellyFlavorName } from '../graphics/character/jelly-flavors.ts';
+import { DEFAULT_JELLY_FLAVOR, FLAVOR_LABELS, JELLY_FLAVORS, type JellyFlavorName } from '../graphics/character/jelly-flavors.ts';
 
 export function flavorPickerMarkup() {
   const options=Object.entries(JELLY_FLAVORS).map(([name,flavor])=>`
     <button class="flavor-option" type="button" data-flavor="${name}" aria-pressed="${name===DEFAULT_JELLY_FLAVOR}" style="--flavor-color:${flavor.surface}">
-      <span class="flavor-option-swatch" aria-hidden="true"></span><span>${name}</span>
+      <span class="flavor-option-swatch" aria-hidden="true"></span><span>${FLAVOR_LABELS[name as JellyFlavorName]}</span>
     </button>`).join('');
   return `<div id="flavor-picker" class="flavor-picker">
-    <button id="flavor" class="icon-button flavor-picker-button" type="button" aria-label="Choose jelly flavor (currently ${DEFAULT_JELLY_FLAVOR})" aria-haspopup="true" aria-expanded="false" aria-controls="flavor-menu" title="Jelly flavor: ${DEFAULT_JELLY_FLAVOR}">
+    <button id="flavor" class="icon-button flavor-picker-button" type="button" aria-label="Wybierz kolor Żelka" aria-haspopup="true" aria-expanded="false" aria-controls="flavor-menu" title="Kolor Żelka">
       <svg class="palette-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path d="M12 3C6.48 3 2 6.92 2 11.75C2 16.58 6.48 20.5 12 20.5H13.4C14.6 20.5 15.35 19.2 14.75 18.16C14.24 17.28 14.88 16.18 15.9 16.18H17.2C19.85 16.18 22 14.03 22 11.38C22 6.75 17.52 3 12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
         <circle cx="7.2" cy="10.2" r="1.25" fill="#FF5A5F"/>
@@ -15,7 +15,7 @@ export function flavorPickerMarkup() {
         <circle cx="17.2" cy="9.8" r="1.25" fill="#5B8CFF"/>
       </svg>
     </button>
-    <div id="flavor-menu" class="flavor-menu" role="group" aria-label="Jelly flavor choices" hidden>${options}
+    <div id="flavor-menu" class="flavor-menu" role="group" aria-label="Kolory Żelka" hidden>${options}
     </div>
   </div>`;
 }
@@ -86,8 +86,8 @@ export class FlavorPicker {
   };
 
   private setSelected(name:JellyFlavorName) {
-    this.button.title=`Jelly flavor: ${name}`;
-    this.button.setAttribute('aria-label',`Choose jelly flavor (currently ${name})`);
+    this.button.title=`Kolor: ${FLAVOR_LABELS[name]}`;
+    this.button.setAttribute('aria-label',`Wybierz kolor (obecnie ${FLAVOR_LABELS[name]})`);
     this.options.forEach(option=>option.setAttribute('aria-pressed',String(option.dataset.flavor===name)));
   }
 

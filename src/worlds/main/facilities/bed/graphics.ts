@@ -16,9 +16,9 @@ export class Bed {
   constructor(blanket:BedBlanket){
     this.blanket=blanket;
     this.group.position.set(BED.x,0,BED.z);
-    const wood=new THREE.MeshPhysicalNodeMaterial({color:'#bf986c',roughness:.46,clearcoat:.2});
+    const wood=new THREE.MeshPhysicalNodeMaterial({color:'#2c4441',roughness:.46,clearcoat:.2});
     wood.colorNode=vec3(wood.color.r,wood.color.g,wood.color.b).mul(positionLocal.z.mul(3100).add(positionLocal.x.mul(90).sin().mul(2)).sin().mul(.045).add(.955));
-    const cream=new THREE.MeshStandardNodeMaterial({color:'#f0e5ce',roughness:.94});
+    const cream=new THREE.MeshStandardNodeMaterial({color:'#b8b8a5',roughness:.94});
     const piping=new THREE.MeshStandardNodeMaterial({color:'#d5c49c',roughness:.85});
     const brass=new THREE.MeshStandardNodeMaterial({color:'#b48d4e',metalness:.72,roughness:.3});
     const fabric=new THREE.MeshPhysicalNodeMaterial({color:'#879b86',roughness:.96,sheen:.45,sheenColor:'#d1dec1',side:THREE.DoubleSide});

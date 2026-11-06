@@ -1,3 +1,4 @@
+import { SupporterBand } from './supporter-band.ts';
 import { Group, Mesh, type Scene, type PerspectiveCamera, type WebGPURenderer } from 'three/webgpu';
 import type { SoftBody } from '../../physics/soft-body.js';
 import type { Facility } from '../../facilities/manager.ts';
@@ -24,10 +25,12 @@ export class SoccerFacility implements Facility {
   readonly ball=new Mesh(soccerBallGeometry(),soccerBallMaterial());
   private readonly moving=new Group();
   private scoreValue=-1;
+  private readonly supporterBand:SupporterBand;
   private readonly lighting:SoccerLighting|undefined;
   constructor(scene:Scene,body:SoftBody,shadows:FacilityShadows,grass?:GrassTextureSet,opticalContext?:{camera:PerspectiveCamera;fail:(error:Error)=>void;cameraOnlyOpticalHz?:number}) {
     this.stadium=new SoccerStadium(false,grass);
-    this.physics=new SoccerPhysics(body);this.goalie=new Baby(this.physics.goalie.body);this.goalie.setFlavor('blueberry');
+    this.supporterBand=new SupporterBand(body);this.moving.add(this.supporterBand.group);
+    this.physics=new SoccerPhysics(body);this.goalie=new Baby(this.physics.goalie.body);this.goalie.setFlavor('crystal');
     // FaceSkin binds in the original local rest frame, then follows the placed cage.
     this.physics.goalie.body.updateSurface();this.goalie.update();
     this.collision=new FacilityCollision(body);this.collision.registerBoxes(this.stadium.boxes);
@@ -60,9 +63,9 @@ export class SoccerFacility implements Facility {
     const p=this.physics;this.ball.position.copy(p.ball);this.ball.quaternion.copy(p.ballRotation);
     if(this.scoreValue!==p.score){this.scoreValue=p.score;this.stadium.setScore(p.score);}
   }
-  updateFrame(dt:number){const p=this.physics,body=p.goalie.body;if(body.surfaceDirty)body.updateSurface();this.goalie.update(dt,p.goalieLaughing,false,p.goalieCrying);}
-  updateOptics(renderer:WebGPURenderer,active:boolean){this.lighting?.update(renderer,active);}
+  updateFrame(dt:number){this.supporterBand.update();const p=this.physics,body=p.goalie.body;if(body.surfaceDirty)body.updateSurface();this.goalie.update(dt,p.goalieLaughing,false,p.goalieCrying);}
+  updateOptics(renderer:WebGPURenderer,active:boolean){this.supporterBand.setActive(active);this.lighting?.update(renderer,active);}
   prepareLighting(renderer:WebGPURenderer,active:boolean){return this.lighting?.prepare(renderer,active)??Promise.resolve();}
   reset(){this.physics.reset();this.goalie.resetFace();this.update();}
-  dispose(){this.lighting?.dispose();this.collision.dispose();this.goalieContact.dispose();this.stadium.dispose();this.goalie.dispose();this.ball.geometry.dispose();(this.ball.material as ReturnType<typeof soccerBallMaterial>).dispose();this.moving.removeFromParent();}
+  dispose(){this.supporterBand.dispose();this.lighting?.dispose();this.collision.dispose();this.goalieContact.dispose();this.stadium.dispose();this.goalie.dispose();this.ball.geometry.dispose();(this.ball.material as ReturnType<typeof soccerBallMaterial>).dispose();this.moving.removeFromParent();}
 }

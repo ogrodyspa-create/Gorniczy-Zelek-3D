@@ -10,6 +10,14 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+audit-pages-dist/
+release-check/
+changed-files.txt
+stage2-changed-files.txt
+*.tmp
+.env
+.env.*
+!.env.example
 *.local
 
 # Editor directories and files

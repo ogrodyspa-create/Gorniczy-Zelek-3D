@@ -55,15 +55,15 @@ facility.visual.group.traverse(object=>{
   assert(object.castShadow&&object.receiveShadow,`${object.name} has full shadow flags`);
   for(const value of object.geometry.attributes.position.array)assert(Number.isFinite(value),`${object.name} has finite geometry`);
 });
-assert.deepEqual(facility.visual.items.map(item=>item.root.name),['floral-crown','top-hat','baseball-cap']);
-assert.deepEqual(HEAD_WEARABLES.map(item=>item.scale),[.016,.0144,.0125],'wearable scales match the tuned fit sizes');
-assert.deepEqual(HEAD_WEARABLES.map(item=>item.headLift),[-.0022,-.0003,.0038],'hat and cap use their fitted non-intersecting head heights');
-assert.deepEqual(HEAD_WEARABLES.map(item=>item.headForward),[0,0,-.0042],'baseball cap seating accounts for its built-in tilt instead of pushing the rear rim into the head');
+assert.deepEqual(facility.visual.items.map(item=>item.root.name),['czako','mining-helmet','welding-mask']);
+assert.deepEqual(HEAD_WEARABLES.map(item=>item.scale),[.016,.017,.016],'wearable scales match the tuned fit sizes');
+assert.deepEqual(HEAD_WEARABLES.map(item=>item.headLift),[-.001,-.001,-.003],'hat and cap use their fitted non-intersecting head heights');
+assert.deepEqual(HEAD_WEARABLES.map(item=>item.headForward),[0,0,0],'baseball cap seating accounts for its built-in tilt instead of pushing the rear rim into the head');
 
 moveBody(body,WEARABLE_TABLE.x+HEAD_WEARABLES[0].slotX,WEARABLE_TABLE.z);
 assert.equal(facility.physics.availableIndex,0,'nearest slot is the floral crown');
 assert(Number.isFinite(facility.interactionDistance));
-assert.equal(facility.action,'Wear Floral Crown');assert.equal(facility.mobileAction,'Wear Floral Crown');
+assert.equal(facility.action,'Wear Czako górnicze');assert.equal(facility.mobileAction,'Wear Czako górnicze');
 assert(facility.interact(),'wear interaction succeeds');
 assert.equal(facility.physics.wornIndex,0);assert.equal(facility.visual.items[0].root.parent,babyGroup);
 facility.update();babyGroup.updateWorldMatrix(true,true);
@@ -73,7 +73,7 @@ assert(wornBounds.min.y<body.center.y+.07,'crown sits down on the head instead o
 
 moveBody(body,WEARABLE_TABLE.x+HEAD_WEARABLES[1].slotX,WEARABLE_TABLE.z);
 assert.equal(facility.physics.swapIndex,1,'an equipped item can be swapped for the nearby table item');
-assert.equal(facility.action,'Swap to Top Hat');assert.equal(facility.mobileAction,'Swap to Top Hat');
+assert.equal(facility.action,'Swap to Kask z lampą');assert.equal(facility.mobileAction,'Swap to Kask z lampą');
 assert(facility.interact(),'swap interaction succeeds');
 assert.equal(facility.physics.wornIndex,1);assert.equal(facility.visual.items[1].root.parent,babyGroup,'top hat is now worn');
 assert.equal(facility.visual.items[0].root.parent,facility.visual.group,'previous crown returns to the table');
@@ -112,7 +112,7 @@ moveBody(body,.65,-.55);carried.update();babyGroup.updateWorldMatrix(true,true);
 assert.equal(facility.physics.wornIndex,2,'equipped cap remains worn after moving into another world');
 assert.equal(facility.visual.items[2].root.parent,babyGroup,'carried cap remains parented to the shared baby root');
 assert(Number.isFinite(carried.interactionDistance)&&carried.interactionDistance>1e6,'toy take-off is a fallback behind nearby facilities');
-assert.equal(carried.action,'Take off Baseball Cap');
+assert.equal(carried.action,'Take off Przyłbica spawalnicza');
 assert(carried.interact(),'carried attire can be taken off with the shared interaction');
 assert.equal(facility.physics.wornIndex,null);
 assert.equal(facility.visual.items[2].root.parent,facility.visual.group,'toy-world take-off reparents the cap to the hidden dressing table');

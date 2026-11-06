@@ -189,10 +189,10 @@ export class JellyPortal {
     material.emissiveNode=material.colorNode.mul(.14);
     material.roughnessNode=float(.15).add(wave.mul(.16));
     // A measured reveal keeps the animated disc inside the shell aperture.
-    const membrane=part(this.group,new T.CylinderGeometry(PORTAL_DATUM.membraneRadius,PORTAL_DATUM.membraneRadius,.0014,96),material);membrane.rotation.x=Math.PI/2;membrane.name='vortex-membrane';
+    const membrane=part(this.group,new T.CylinderGeometry(PORTAL_DATUM.membraneRadius,PORTAL_DATUM.membraneRadius,.0014,96),material);membrane.rotation.x=Math.PI/2;membrane.name='vortex-membrane';membrane.material=new T.MeshStandardNodeMaterial({color:'#172c2b',emissive:'#3b7669',emissiveIntensity:.35,metalness:.65,roughness:.26});
     const casing=new T.Group();casing.name='portal-casing';this.group.add(casing);
-    const pearl=enamel(0xf4dcb1),brass=new T.MeshPhysicalNodeMaterial({color:0xc6a36d,metalness:.55,roughness:.3});
-    const mint=enamel(0x78dfc6),pink=enamel(0xff8296),lavender=enamel(0xc3a0ff);
+    const pearl=enamel(0x2a4140),brass=new T.MeshPhysicalNodeMaterial({color:0xc6a36d,metalness:.55,roughness:.3});
+    const mint=enamel(0x8fa99c),pink=enamel(0xb47748),lavender=enamel(0x536c67);
     const gasket=enamel(0x546568,.65),rubber=enamel(0x8b938b,.8);
     part(casing,solidLoft(housingRings(),true),pearl).name='aperture-housing';
     // Both faces are finished: arrival can happen on either side of the device.

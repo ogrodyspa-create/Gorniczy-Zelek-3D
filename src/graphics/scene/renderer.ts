@@ -46,9 +46,9 @@ export function resizeView(renderer:THREE.WebGPURenderer,camera:THREE.Perspectiv
   const width=Math.max(1,window.innerWidth),height=Math.max(1,window.innerHeight);
   renderer.setDrawingBufferSize(width,height,drawingBufferDpr(width,height,window.devicePixelRatio,maxDpr));
   camera.aspect=width/height;
-  camera.fov=2*Math.atan(Math.tan(18*Math.PI/180)*Math.max(1,.85/camera.aspect))*180/Math.PI;
-  // Every visible ray meets the tabletop. The horizon never enters the frame.
-  controls.maxPolarAngle=Math.PI/2-THREE.MathUtils.degToRad(camera.fov)/2-.10;
-  camera.setViewOffset(width,height,0,height*(width<700?.075:.025),width,height);
+  camera.fov=2*Math.atan(Math.tan(22*Math.PI/180)*Math.max(1,.85/camera.aspect))*180/Math.PI;
+  // The enclosed workshop permits a lower viewing angle to show its walls and signage.
+  controls.maxPolarAngle=1.42;
+  camera.setViewOffset(width,height,0,height*(-.08),width,height);
   camera.updateProjectionMatrix();controls.update();
 }

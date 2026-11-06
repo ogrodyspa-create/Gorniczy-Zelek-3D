@@ -1,3 +1,4 @@
+import { footballPortalBranding, disposeBrandingTextures } from './soccer/branding.ts';
 import { Scene, type WebGPURenderer, type PerspectiveCamera } from 'three/webgpu';
 import type { SoftBody } from '../physics/soft-body.js';
 import type { FacilityShadows } from '../facilities/shadows.ts';
@@ -56,6 +57,7 @@ export class WorldTravel {
     this.menu=new DestinationMenu(id=>{if(id===this.current){this.onMenuClose();return;}void this.travel(id).catch(this.fail);},()=>this.onMenuClose());
     this.homePortalFacility=new PortalFacility(body,'home-portal-housing',HOME_PORTAL.x,HOME_PORTAL.z,this.homePortal.collisionBoxes,()=>this.requestTravel(),()=>this.portalAvailable());
     this.homeFacilities.add(this.homePortalFacility);
+    footballPortalBranding(this.homePortal.group);
     this.home.add(this.homePortal.group);this.toys.visible=this.soccerWorld.visible=false;scene.add(this.home,this.toys,this.soccerWorld);
     this.shadows.add(this.homePortal.group,this.homePortal.lightingEnvelope);
   }
@@ -106,7 +108,7 @@ export class WorldTravel {
   private async travel(destination:WorldId) {
     this.loading=true;this.onMove();
     document.querySelector('#loading')!.classList.remove('hidden');
-    this.stage(destination==='home'?'Going home':destination==='toys'?'Unpacking the toy road':'Unpacking the little stadium');
+    this.stage(destination==='home'?'Going home':destination==='toys'?'Unpacking the toy road':'Otwieranie strefy ZAGŁĘBIE LUBIN');
     // Give the existing loading card a painted frame before construction/compile.
     await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
     if(this.disposed)return;
@@ -132,7 +134,7 @@ export class WorldTravel {
       // focused on pipelines instead of paying texture upload at the same time.
       for(const texture of Object.values(grass))this.renderer.initTexture(texture);
       this.soccer=new SoccerFacility(this.soccerWorld,this.body,this.shadows,grass,{camera:this.camera,fail:this.fail,cameraOnlyOpticalHz:this.cameraOnlyOpticalHz});this.soccerFacilities.add(this.soccer);
-      this.soccerPortal=new JellyPortal(SOCCER_PORTAL.x,SOCCER_PORTAL.z);this.soccerWorld.add(this.soccerPortal.group);this.shadows.add(this.soccerPortal.group,this.soccerPortal.lightingEnvelope);
+      this.soccerPortal=new JellyPortal(SOCCER_PORTAL.x,SOCCER_PORTAL.z);footballPortalBranding(this.soccerPortal.group,true);this.soccerWorld.add(this.soccerPortal.group);this.shadows.add(this.soccerPortal.group,this.soccerPortal.lightingEnvelope);
       this.soccerPortalFacility=new PortalFacility(this.body,'soccer-portal-housing',SOCCER_PORTAL.x,SOCCER_PORTAL.z,this.soccerPortal.collisionBoxes,()=>this.requestTravel(),()=>this.portalAvailable());
       this.soccerFacilities.add(this.soccerPortalFacility);this.soccerFacilities.warmupCollisions();
     }
@@ -164,5 +166,5 @@ export class WorldTravel {
     if(this.disposed)return;
     document.querySelector('#loading')!.classList.add('hidden');this.loading=false;
   }
-  dispose(){this.disposed=true;this.menu.dispose();this.toyFacilities.dispose();this.soccerFacilities.dispose();this.homePortal.dispose();this.returnPortal?.dispose();this.soccerPortal?.dispose();this.home.removeFromParent();this.toys.removeFromParent();this.soccerWorld.removeFromParent();}
+  dispose(){this.disposed=true;this.menu.dispose();this.toyFacilities.dispose();this.soccerFacilities.dispose();disposeBrandingTextures(this.homePortal.group);this.homePortal.dispose();this.returnPortal?.dispose();if(this.soccerPortal)disposeBrandingTextures(this.soccerPortal.group);this.soccerPortal?.dispose();this.home.removeFromParent();this.toys.removeFromParent();this.soccerWorld.removeFromParent();}
 }

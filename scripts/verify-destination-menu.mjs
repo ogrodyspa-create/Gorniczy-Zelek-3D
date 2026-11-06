@@ -5,7 +5,7 @@ globalThis.window=new globalThis.EventTarget();
 const element=()=>{const el=new globalThis.EventTarget();el.children=[];el.append=(...nodes)=>el.children.push(...nodes);el.setAttribute=()=>{};el.remove=()=>{};el.focus=()=>{globalThis.document.activeElement=el;};el.click=()=>el.dispatchEvent(new globalThis.Event('click'));el.showModal=()=>{el.open=true;};el.close=()=>{el.open=false;};return el;};
 const app=element();globalThis.document={createElement:element,querySelector:()=>app,activeElement:null};
 let selected,closed=0;const menu=new DestinationMenu(id=>{selected=id;},()=>closed++);
-assert.deepEqual(DESTINATIONS.map(d=>d.label),['Home','Play Tricycle','Play Soccer']);
+assert.deepEqual(DESTINATIONS.map(d=>d.label),['Home','Play Tricycle','ZAGŁĘBIE LUBIN']);
 const key=(code)=>{const event=new globalThis.Event('keydown',{cancelable:true});event.code=code;globalThis.window.dispatchEvent(event);assert(event.defaultPrevented);};
 menu.show('home');assert(menu.opened);key('Enter');assert.equal(selected,'home','current world is selected by default');assert(!menu.opened);
 menu.show('home');key('ArrowDown');key('Enter');assert.equal(selected,'toys');

@@ -39,7 +39,8 @@
     "test:performance": "node --experimental-strip-types scripts/verify-performance.mjs",
     "benchmark": "node --experimental-strip-types scripts/benchmark.mjs",
     "build": "node scripts/ensure-built-assets.mjs && tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:pages": "node scripts/ensure-built-assets.mjs && tsc && vite build --base=/Gorniczy-Zelek-3D/"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

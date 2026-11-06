@@ -1,3 +1,7 @@
+import { WorkshopRecording } from '../worlds/main/mining/recording.ts';
+import { createCopperHeart } from '../graphics/character/copper-heart.ts';
+import { MiningWorkshop } from '../worlds/main/mining/workshop.ts';
+import { MiningControls } from '../worlds/main/mining/controls.ts';
 import * as THREE from 'three/webgpu';
 import { SoftBody } from '../physics/soft-body.js';
 import { PHYS } from '../physics/constants.js';
@@ -40,7 +44,7 @@ export async function startGame(stage:(s:string)=>void,fail:(e:unknown)=>void) {
   const scene=new THREE.Scene();
   scene.background=new THREE.Color('#e8d9c3');scene.fog=new THREE.Fog('#e8d9c3',2,12);
   const camera=new THREE.PerspectiveCamera(36,1,.001,40);
-  camera.position.set(.111,.170,.256);
+  camera.position.set(.10,.135,.43);
   stage('Loading the little room');
   const [environment,nightEnvironment,cage,tableTextures]=await Promise.all([
     loadEnvironment(renderer,scene),loadEnvironment(renderer,scene,true),loadBabyCage(),loadTableTextures(profile.mobile),
@@ -51,6 +55,7 @@ export async function startGame(stage:(s:string)=>void,fail:(e:unknown)=>void) {
   stage('Making a little jelly');
   const body=new SoftBody(cage);
   const baby=new Baby(body);scene.add(baby.group);
+  const heart=await createCopperHeart(body);baby.group.add(heart.mesh);heart.update(0);
   const localReflections=new LocalReflectionProbe(scene,baby.group,environment.reflectionTexture,profile.reflectionFacesPerFrame);
   baby.setReflectionMap(localReflections.texture,environment.intensity);
   const optics=new RefractiveLightField(body.cage.opticalSurface,environment.incoming,ABSORPTION);
@@ -66,8 +71,11 @@ export async function startGame(stage:(s:string)=>void,fail:(e:unknown)=>void) {
   const rig=new Locomotion(body);
   const facilities=new Facilities(body);
   const worlds=new WorldTravel(scene,body,facilityShadows,facilities,renderer,camera,stage,fail,profile.cameraOnlyOpticalHz);
+  const workshop=new MiningWorkshop(worlds.home,body,facilityShadows);facilities.add(workshop);
   const wearableTable=new WearableFacility(worlds.home,body,baby.group,rig,facilityShadows);
   const bed=new BedFacility(worlds.home,body,facilityShadows);
+  const miningControls=new MiningControls(wearableTable,workshop);
+  const recording=new WorkshopRecording(renderer.domElement);
   rig.onJump=()=>{
     wearableTable.jumpFromNormalLocomotion();
     if(worlds.inSoccer&&(worlds.soccer?.physics.onField??false))sound.soccerGrassContact('takeoff');
@@ -151,7 +159,7 @@ export async function startGame(stage:(s:string)=>void,fail:(e:unknown)=>void) {
   body.updateSurface();
   stage('Warming collisions');
   facilities.warmupCollisions();
-  baby.update();input.update(1);
+  baby.update();heart.update(0);input.update(1);
   const shadowSyncRevision=facilityShadows.update(renderer);
   facilityShadows.surfaces.update(renderer,shadowSyncRevision);
   optics.update(renderer,body,true);
@@ -159,6 +167,7 @@ export async function startGame(stage:(s:string)=>void,fail:(e:unknown)=>void) {
   localReflections.captureNow(renderer,body.center);
   stage('Compiling the material');
   await warmMainScenePipelines(renderer,scene,camera);
+  wearableTable.selectEquipment(0);
   stage('Drawing the first frame');
   composite.render();
   // Fence first-frame GPU work so validation/OOM cannot masquerade as a successful boot.
@@ -190,6 +199,7 @@ export async function startGame(stage:(s:string)=>void,fail:(e:unknown)=>void) {
       if(worlds.loading)return;
       worlds.facilities.update();worlds.update(dt);
       baby.update(dt,worlds.facilities.active?.laughing??false,worlds.facilities.active?.sleeping??false,worlds.facilities.crying);
+      heart.update(dt);miningControls.update();
       const shadowSyncRevision=facilityShadows.update(renderer);
       facilityShadows.surfaces.update(renderer,shadowSyncRevision);
       input.update(dt);
@@ -210,7 +220,7 @@ export async function startGame(stage:(s:string)=>void,fail:(e:unknown)=>void) {
   const dispose=()=>{
     if(disposed)return;disposed=true;
     lightingMode.dispose();void renderer.setAnimationLoop(null);input.dispose();sound.dispose();transport.dispose();resizeObserver.disconnect();cancelAnimationFrame(resizeFrame);
-    worlds.dispose();facilities.dispose();facilityShadows.dispose();caustics.dispose();flavorPicker.dispose();composite.dispose();localReflections.dispose();baby.dispose();table.dispose();environment.dispose();optics.dispose();renderer.dispose();
+    recording.dispose();miningControls.dispose();worlds.dispose();facilities.dispose();facilityShadows.dispose();caustics.dispose();flavorPicker.dispose();composite.dispose();localReflections.dispose();heart.dispose();baby.dispose();table.dispose();environment.dispose();optics.dispose();renderer.dispose();
   };
   window.addEventListener('pagehide',event=>{if(!event.persisted)dispose();});
   if(import.meta.hot)import.meta.hot.dispose(dispose);
